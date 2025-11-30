@@ -1,0 +1,16 @@
+export function Footer() {
+    return (
+        <footer className="w-full py-12 px-6 md:px-12 lg:px-24 border-t border-gray-100 mt-auto">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                <div className="text-sm text-secondary">
+                    © {new Date().getFullYear()} Impact Founder. All rights reserved.
+                </div>
+                <div className="flex gap-6 text-sm text-secondary">
+                    <a href="#" className="hover:text-primary transition-colors">Twitter</a>
+                    <a href="#" className="hover:text-primary transition-colors">LinkedIn</a>
+                    <a href="#" className="hover:text-primary transition-colors">Email</a>
+                </div>
+            </div>
+        </footer>
+    )
+}
