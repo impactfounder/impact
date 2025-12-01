@@ -40,7 +40,7 @@ export const LINKS_QUERY = defineQuery(`*[_type == "link"] | order(publishedAt d
   publishedAt
 }`);
 
-export const LATEST_LINKS_QUERY = defineQuery(`*[_type == "link"] | order(publishedAt desc)[0...4] {
+export const LATEST_LINKS_QUERY = defineQuery(`*[_type == "link"] | order(publishedAt desc)[0...6] {
   _id,
   url,
   title,
