@@ -1,9 +1,9 @@
 import { Button, Stack, useToast, Box } from '@sanity/ui'
 import { useCallback, useState } from 'react'
-import { set, type ObjectInputProps, MemberField } from 'sanity'
+import { set, type ObjectInputProps } from 'sanity'
 
 export function LinkMetadataInput(props: ObjectInputProps) {
-    const { onChange, members, renderInput, renderItem, renderPreview } = props
+    const { onChange, members, renderDefault } = props
     const [isLoading, setIsLoading] = useState(false)
     const toast = useToast()
 
@@ -53,17 +53,9 @@ export function LinkMetadataInput(props: ObjectInputProps) {
 
     return (
         <Stack space={3}>
-            {members.map((member) => {
-                if (member.kind !== 'field') return null
-                return (
-                    <MemberField
-                        key={member.key}
-                        member={member}
-                        renderInput={renderInput}
-                        renderItem={renderItem}
-                        renderPreview={renderPreview}
-                    />
-                )
+            {renderDefault({
+                ...props,
+                renderDefault: undefined
             })}
             <Box padding={2}>
                 <Button

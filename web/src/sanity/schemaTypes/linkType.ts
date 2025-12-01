@@ -1,6 +1,5 @@
 import { LinkIcon } from '@sanity/icons'
 import { defineField, defineType } from 'sanity'
-import { LinkMetadataInput } from '../components/UrlInput'
 
 export const linkType = defineType({
     name: 'link',
@@ -18,7 +17,7 @@ export const linkType = defineType({
             name: 'title',
             title: 'Title',
             type: 'string',
-            description: 'Fetched automatically from OG tags, but can be edited.',
+            description: 'Enter the title manually',
         }),
         defineField({
             name: 'description',
@@ -47,8 +46,5 @@ export const linkType = defineType({
             subtitle: 'url',
             media: 'image',
         },
-    },
-    components: {
-        input: LinkMetadataInput,
     },
 })

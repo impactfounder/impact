@@ -17,32 +17,34 @@ export function LinkCard({ link }: LinkCardProps) {
             href={link.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="group flex gap-4 p-4 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100"
+            className="group flex flex-col gap-4 p-4 rounded-lg border border-border bg-white hover:shadow-lg transition-all duration-300"
         >
-            <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-md bg-gray-100">
+            <div className="relative aspect-[16/9] w-full overflow-hidden rounded-md bg-muted">
                 {link.image ? (
                     <Image
-                        src={urlFor(link.image).width(200).height(200).url()}
+                        src={urlFor(link.image).width(800).height(450).url()}
                         alt={link.title}
                         fill
-                        className="object-cover"
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                 ) : (
-                    <div className="flex h-full items-center justify-center text-gray-300 text-xs">
-                        Link
+                    <div className="flex h-full items-center justify-center text-secondary">
+                        No Image
                     </div>
                 )}
             </div>
-            <div className="flex flex-col justify-center gap-1">
-                <h3 className="text-sm font-semibold text-primary group-hover:text-blue-600 transition-colors line-clamp-1">
-                    {link.title}
-                </h3>
-                <p className="text-xs text-secondary line-clamp-2">
-                    {link.description || link.url}
-                </p>
-                <span className="text-[10px] text-gray-400 mt-1">
+            <div className="flex flex-col gap-2">
+                <span className="text-xs font-medium text-secondary uppercase tracking-wider">
                     {new Date(link.publishedAt).toLocaleDateString()}
                 </span>
+                <h3 className="text-lg font-semibold text-foreground group-hover:text-accent transition-colors line-clamp-2">
+                    {link.title}
+                </h3>
+                {link.description && (
+                    <p className="text-sm text-secondary line-clamp-2">
+                        {link.description}
+                    </p>
+                )}
             </div>
         </a>
     )
