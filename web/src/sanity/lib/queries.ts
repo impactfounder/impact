@@ -48,3 +48,9 @@ export const LATEST_LINKS_QUERY = defineQuery(`*[_type == "link"] | order(publis
   image,
   publishedAt
 }`);
+
+export const CATEGORIES_QUERY = defineQuery(`*[_type == "category"] | order(title asc) {
+  _id,
+  title,
+  slug
+}`);
