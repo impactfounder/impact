@@ -11,7 +11,7 @@ export const POSTS_QUERY = defineQuery(`*[_type == "post" && defined(slug.curren
 }`);
 
 // Get latest 3 posts (excluding About page)
-export const LATEST_POSTS_QUERY = defineQuery(`*[_type == "post" && defined(slug.current) && slug.current != "about"] | order(publishedAt desc)[0...3] {
+export const LATEST_POSTS_QUERY = defineQuery(`*[_type == "post" && defined(slug.current) && slug.current != "about"] | order(publishedAt desc)[0...6] {
   _id,
   title,
   slug,
