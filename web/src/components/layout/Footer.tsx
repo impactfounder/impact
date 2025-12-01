@@ -5,11 +5,6 @@ export function Footer() {
                 <div className="text-sm text-secondary">
                     © {new Date().getFullYear()} Impact Founder. All rights reserved.
                 </div>
-                <div className="flex gap-6 text-sm text-secondary">
-                    <a href="#" className="hover:text-primary transition-colors">Twitter</a>
-                    <a href="#" className="hover:text-primary transition-colors">LinkedIn</a>
-                    <a href="#" className="hover:text-primary transition-colors">Email</a>
-                </div>
             </div>
         </footer>
     )
