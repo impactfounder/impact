@@ -15,19 +15,19 @@ interface PageProps {
 const portableTextComponents = {
     block: {
         h1: ({ children }: any) => (
-            <h1 className="text-3xl md:text-4xl font-bold mt-12 mb-6 text-primary">{children}</h1>
+            <h1 className="text-3xl md:text-4xl font-bold mt-16 mb-6 text-gray-900 leading-tight">{children}</h1>
         ),
         h2: ({ children }: any) => (
-            <h2 className="text-2xl md:text-3xl font-bold mt-10 mb-4 text-primary">{children}</h2>
+            <h2 className="text-2xl md:text-3xl font-bold mt-14 mb-5 text-gray-900 leading-tight">{children}</h2>
         ),
         h3: ({ children }: any) => (
-            <h3 className="text-xl md:text-2xl font-semibold mt-8 mb-3 text-primary">{children}</h3>
+            <h3 className="text-xl md:text-2xl font-bold mt-10 mb-4 text-gray-900 leading-tight">{children}</h3>
         ),
         h4: ({ children }: any) => (
-            <h4 className="text-lg md:text-xl font-semibold mt-6 mb-2 text-primary">{children}</h4>
+            <h4 className="text-lg md:text-xl font-bold mt-8 mb-3 text-gray-900 leading-tight">{children}</h4>
         ),
         normal: ({ children }: any) => (
-            <p className="mb-5 leading-relaxed text-foreground whitespace-pre-wrap">{children}</p>
+            <p className="mb-7 leading-8 text-lg text-gray-800 whitespace-pre-wrap break-keep">{children}</p>
         ),
     },
     marks: {
@@ -71,13 +71,13 @@ export default async function BlogPostPage({ params }: PageProps) {
     }
 
     return (
-        <article className="py-12 px-6 md:px-12 lg:px-24 max-w-4xl mx-auto w-full flex flex-col gap-8">
+        <article className="py-20 px-6 max-w-3xl mx-auto w-full flex flex-col gap-10">
             {/* Header */}
-            <header className="flex flex-col gap-6 text-center items-center">
-                <div className="flex items-center gap-2 text-sm font-medium text-secondary uppercase tracking-wider">
+            <header className="flex flex-col gap-6 items-start text-left">
+                <div className="flex items-center gap-2 text-sm font-medium text-gray-500 uppercase tracking-wider">
                     {post.categories?.[0]?.title || 'Blog'} • {new Date(post.publishedAt).toLocaleDateString()}
                 </div>
-                <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-primary leading-tight">
+                <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-gray-900 leading-tight">
                     {post.title}
                 </h1>
                 {post.author && (
