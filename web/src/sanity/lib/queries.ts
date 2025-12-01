@@ -54,3 +54,10 @@ export const CATEGORIES_QUERY = defineQuery(`*[_type == "category"] | order(titl
   title,
   slug
 }`);
+
+export const NAVIGATION_QUERY = defineQuery(`*[_type == "navigation"][0] {
+  items[] {
+    label,
+    link
+  }
+}`);
