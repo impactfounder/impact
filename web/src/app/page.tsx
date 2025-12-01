@@ -26,9 +26,9 @@ export default async function Home() {
             {/* Latest Posts */}
             <section className="flex flex-col gap-8">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-3xl font-bold text-primary">Latest Posts</h2>
+                    <h2 className="text-3xl font-bold text-primary">최신 글</h2>
                     <a href="/blog" className="text-accent hover:underline">
-                        View all →
+                        전체 보기 →
                     </a>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -41,9 +41,9 @@ export default async function Home() {
             {/* Curated Links */}
             <section className="flex flex-col gap-8">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-3xl font-bold text-primary">Curated Insights</h2>
+                    <h2 className="text-3xl font-bold text-primary">인사이트 큐레이션</h2>
                     <a href="/insights" className="text-accent hover:underline">
-                        View all →
+                        전체 보기 →
                     </a>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
