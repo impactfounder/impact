@@ -49,6 +49,15 @@ export interface Navigation {
   items: NavigationItem[]
 }
 
+// Helper to format image path with proper prefix
+function formatImagePath(imagePath: string | null, prefix: string): string | null {
+  if (!imagePath) return null
+  // If already has a path prefix, return as-is
+  if (imagePath.startsWith('/') || imagePath.startsWith('http')) return imagePath
+  // Otherwise, add the prefix
+  return `${prefix}/${imagePath}`
+}
+
 // Helper to get all posts (excluding about) - returns metadata only, no body
 export async function getPosts(): Promise<PostMeta[]> {
   const slugs = await reader.collections.posts.list()
@@ -63,7 +72,7 @@ export async function getPosts(): Promise<PostMeta[]> {
           slug,
           title: post.title || '',
           author: post.author,
-          mainImage: post.mainImage,
+          mainImage: formatImagePath(post.mainImage, '/images/posts'),
           mainImageAlt: post.mainImageAlt,
           categories: post.categories || [],
           publishedAt: post.publishedAt,
@@ -94,7 +103,7 @@ export async function getPost(slug: string): Promise<PostMeta | null> {
     slug,
     title: post.title || '',
     author: post.author,
-    mainImage: post.mainImage,
+    mainImage: formatImagePath(post.mainImage, '/images/posts'),
     mainImageAlt: post.mainImageAlt,
     categories: post.categories || [],
     publishedAt: post.publishedAt,
@@ -149,7 +158,7 @@ export async function getLinks(): Promise<Link[]> {
         title: link.title || '',
         url: link.url || '',
         description: link.description,
-        image: link.image,
+        image: formatImagePath(link.image, '/images/links'),
         publishedAt: link.publishedAt,
       }
     })
@@ -177,7 +186,7 @@ export async function getAuthor(slug: string): Promise<Author | null> {
   return {
     slug,
     name: author.name || '',
-    image: author.image,
+    image: formatImagePath(author.image, '/images/authors'),
     bio: author.bio,
   }
 }

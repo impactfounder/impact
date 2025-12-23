@@ -1,9 +1,17 @@
-import { getPost, getAuthor, getCategoryTitle } from "@/lib/keystatic/reader"
+import { getPost, getAuthor, getCategoryTitle, reader } from "@/lib/keystatic/reader"
 import Image from "next/image"
 import { notFound } from "next/navigation"
 import { PostBody } from "@/components/features/PostBody"
 
 export const revalidate = 60
+
+// Generate static params for all posts at build time
+export async function generateStaticParams() {
+    const slugs = await reader.collections.posts.list()
+    return slugs
+        .filter(slug => slug !== 'about')
+        .map((slug) => ({ slug }))
+}
 
 interface PageProps {
     params: Promise<{ slug: string }>
