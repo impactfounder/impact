@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate:sanity": "tsx migration/sanity-to-keystatic.ts"
   },
   "dependencies": {
     "@keystatic/core": "^0.5.48",
@@ -20,13 +21,16 @@
     "react-dom": "19.2.0"
   },
   "devDependencies": {
+    "@sanity/client": "^7.13.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.2.3",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

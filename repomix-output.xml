@@ -43,6 +43,7 @@ The content is organized as follows:
 .claude/settings.local.json
 web/.gitignore
 web/eslint.config.mjs
+web/keystatic.config.ts
 web/migration/ghost.json
 web/migration/migrate.ts
 web/next.config.ts
@@ -50,57 +51,54 @@ web/package.json
 web/postcss.config.mjs
 web/public/file.svg
 web/public/globe.svg
+web/public/images/links/.jpg
+web/public/images/links/1.png
+web/public/images/posts/2025audit.jpg
+web/public/images/posts/250828presentation.png
+web/public/images/posts/25legexpo.png
+web/public/images/posts/aimvp.jpg
 web/public/next.svg
 web/public/vercel.svg
 web/public/window.svg
 web/README.md
-web/sanity.cli.ts
-web/sanity.config.ts
-web/src/app/(studio)/layout.tsx
-web/src/app/(studio)/studio/[[...tool]]/page.tsx
 web/src/app/about/page.tsx
+web/src/app/api/keystatic/[[...params]]/route.ts
 web/src/app/api/og/route.ts
 web/src/app/blog/[slug]/page.tsx
 web/src/app/blog/page.tsx
 web/src/app/favicon.ico
 web/src/app/globals.css
 web/src/app/insights/page.tsx
+web/src/app/keystatic/[[...params]]/page.tsx
+web/src/app/keystatic/keystatic.tsx
+web/src/app/keystatic/layout.tsx
 web/src/app/layout.tsx
 web/src/app/media/page.tsx
 web/src/app/page.tsx
 web/src/components/features/BlogCard.tsx
 web/src/components/features/LinkCard.tsx
+web/src/components/features/MarkdocRenderer.tsx
 web/src/components/features/PostList.tsx
 web/src/components/layout/Footer.tsx
 web/src/components/layout/Header.tsx
-web/src/sanity/components/UrlInput.tsx
-web/src/sanity/env.ts
-web/src/sanity/lib/client.ts
-web/src/sanity/lib/image.ts
-web/src/sanity/lib/queries.ts
-web/src/sanity/schemaTypes/authorType.ts
-web/src/sanity/schemaTypes/categoryType.ts
-web/src/sanity/schemaTypes/index.ts
-web/src/sanity/schemaTypes/linkType.ts
-web/src/sanity/schemaTypes/navigationType.ts
-web/src/sanity/schemaTypes/postType.ts
-web/src/sanity/structure.ts
+web/src/content/categories/episode/index.json
+web/src/content/categories/insight/index.json
+web/src/content/links/1/index.json
+web/src/content/links/mz/index.json
+web/src/content/links/rising-biz-star/index.json
+web/src/content/links/youth-future-participation/index.json
+web/src/content/navigation/index.json
+web/src/content/posts/2025audit/index.mdoc
+web/src/content/posts/250828presentation/index.mdoc
+web/src/content/posts/25legexpo/index.mdoc
+web/src/content/posts/about/index.mdoc
+web/src/content/posts/aimvp/index.mdoc
+web/src/lib/keystatic/reader.ts
 web/tsconfig.json
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
-
-<file path=".claude/settings.local.json">
-{
-  "permissions": {
-    "allow": [
-      "Bash(cat:*)",
-      "Bash(git fetch:*)"
-    ]
-  }
-}
-</file>
 
 <file path="web/.gitignore">
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
@@ -167,48 +165,146 @@ const eslintConfig = defineConfig([
 export default eslintConfig;
 </file>
 
-<file path="web/package.json">
-{
-  "name": "web",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+<file path="web/keystatic.config.ts">
+import { config, fields, collection, singleton } from '@keystatic/core'
+
+export default config({
+  storage: {
+    kind: 'local',
   },
-  "dependencies": {
-    "@sanity/block-tools": "^3.70.0",
-    "@sanity/client": "^7.13.1",
-    "@sanity/icons": "^3.7.4",
-    "@sanity/image-url": "^2.0.1",
-    "@sanity/schema": "^4.19.0",
-    "@sanity/ui": "^3.1.11",
-    "@sanity/vision": "^4.19.0",
-    "@types/jsdom": "^27.0.0",
-    "dotenv": "^17.2.3",
-    "jsdom": "^27.2.0",
-    "next": "16.0.5",
-    "next-sanity": "^11.6.10",
-    "open-graph-scraper": "^6.11.0",
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
-    "sanity": "^4.19.0",
-    "styled-components": "^6.1.19"
+  collections: {
+    posts: collection({
+      label: 'Posts',
+      slugField: 'title',
+      path: 'src/content/posts/*',
+      format: { contentField: 'body' },
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        author: fields.relationship({
+          label: 'Author',
+          collection: 'authors',
+        }),
+        mainImage: fields.image({
+          label: 'Main Image',
+          directory: 'public/images/posts',
+          publicPath: '/images/posts',
+        }),
+        mainImageAlt: fields.text({
+          label: 'Main Image Alt Text',
+        }),
+        categories: fields.array(
+          fields.relationship({
+            label: 'Category',
+            collection: 'categories',
+          }),
+          {
+            label: 'Categories',
+            itemLabel: (props) => props.value || 'Select a category',
+          }
+        ),
+        publishedAt: fields.datetime({
+          label: 'Published At',
+        }),
+        body: fields.markdoc({
+          label: 'Body',
+          options: {
+            image: {
+              directory: 'public/images/posts',
+              publicPath: '/images/posts',
+            },
+          },
+        }),
+      },
+    }),
+    links: collection({
+      label: 'Curated Links',
+      slugField: 'title',
+      path: 'src/content/links/*',
+      format: { data: 'json' },
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        url: fields.url({
+          label: 'URL',
+          validation: { isRequired: true },
+        }),
+        description: fields.text({
+          label: 'Description',
+          multiline: true,
+        }),
+        image: fields.image({
+          label: 'Cover Image',
+          directory: 'public/images/links',
+          publicPath: '/images/links',
+        }),
+        publishedAt: fields.datetime({
+          label: 'Published At',
+          defaultValue: { kind: 'now' },
+        }),
+      },
+    }),
+    categories: collection({
+      label: 'Categories',
+      slugField: 'title',
+      path: 'src/content/categories/*',
+      format: { data: 'json' },
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        description: fields.text({
+          label: 'Description',
+          multiline: true,
+        }),
+      },
+    }),
+    authors: collection({
+      label: 'Authors',
+      slugField: 'name',
+      path: 'src/content/authors/*',
+      format: { data: 'json' },
+      schema: {
+        name: fields.slug({ name: { label: 'Name' } }),
+        image: fields.image({
+          label: 'Profile Image',
+          directory: 'public/images/authors',
+          publicPath: '/images/authors',
+        }),
+        bio: fields.text({
+          label: 'Bio',
+          multiline: true,
+        }),
+      },
+    }),
   },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.0.5",
-    "tailwindcss": "^4",
-    "tsx": "^4.20.6",
-    "typescript": "^5"
-  }
-}
+  singletons: {
+    navigation: singleton({
+      label: 'Navigation',
+      path: 'src/content/navigation',
+      format: { data: 'json' },
+      schema: {
+        title: fields.text({
+          label: 'Title',
+          defaultValue: 'Main Menu',
+        }),
+        items: fields.array(
+          fields.object({
+            label: fields.text({
+              label: 'Label',
+              validation: { isRequired: true },
+            }),
+            link: fields.text({
+              label: 'Link URL',
+              description: 'e.g. /about, /blog, or https://...',
+              validation: { isRequired: true },
+            }),
+          }),
+          {
+            label: 'Menu Items',
+            itemLabel: (props) => props.fields.label.value || 'Menu Item',
+          }
+        ),
+      },
+    }),
+  },
+})
 </file>
 
 <file path="web/postcss.config.mjs">
@@ -280,39 +376,1000 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 </file>
 
-<file path="web/src/app/media/page.tsx">
-import { client } from '@/sanity/lib/client'
-import { LINKS_QUERY } from '@/sanity/lib/queries'
-import { LinkCard } from '@/components/features/LinkCard'
+<file path="web/src/app/api/keystatic/[[...params]]/route.ts">
+import { makeRouteHandler } from '@keystatic/next/route-handler'
+import config from '../../../../../keystatic.config'
 
-export const revalidate = 60
+export const { POST, GET } = makeRouteHandler({
+  config,
+})
+</file>
 
-export default async function MediaPage() {
-    const links = await client.fetch(LINKS_QUERY)
+<file path="web/src/app/keystatic/[[...params]]/page.tsx">
+'use client'
 
-    return (
-        <main className="flex flex-col gap-12 py-12 px-6 md:px-12 lg:px-24 max-w-7xl mx-auto">
-            {/* Header */}
-            <header className="flex flex-col gap-4">
-                <h1 className="text-4xl md:text-5xl font-bold text-foreground">Media</h1>
-                <p className="text-lg text-secondary">뉴스 기사 및 언론 보도</p>
-            </header>
+import { makePage } from '@keystatic/next/ui/app'
+import config from '../../../../keystatic.config'
 
-            {/* Links Grid */}
-            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {links.map((link: any) => (
-                    <LinkCard key={link._id} link={link} />
-                ))}
-            </section>
+export default makePage(config)
+</file>
 
-            {/* Empty State */}
-            {links.length === 0 && (
-                <div className="text-center py-12 text-secondary">
-                    아직 등록된 미디어가 없습니다.
-                </div>
-            )}
-        </main>
-    )
+<file path="web/src/app/keystatic/keystatic.tsx">
+'use client'
+
+import { makePage } from '@keystatic/next/ui/app'
+import config from '../../../keystatic.config'
+
+export default makePage(config)
+</file>
+
+<file path="web/src/app/keystatic/layout.tsx">
+import KeystaticApp from './keystatic'
+
+export default function KeystaticLayout() {
+  return <KeystaticApp />
+}
+</file>
+
+<file path="web/src/components/features/MarkdocRenderer.tsx">
+import Markdoc from '@markdoc/markdoc'
+import React from 'react'
+
+interface MarkdocRendererProps {
+  content: any
+}
+
+// Custom components for Markdoc rendering
+const components = {
+  Heading: ({ level, children }: { level: number; children: React.ReactNode }) => {
+    const Tag = `h${level}` as keyof JSX.IntrinsicElements
+    const styles: Record<number, string> = {
+      1: 'text-3xl md:text-4xl font-bold mt-16 mb-6 text-gray-900 leading-tight',
+      2: 'text-2xl md:text-3xl font-bold mt-14 mb-5 text-gray-900 leading-tight',
+      3: 'text-xl md:text-2xl font-bold mt-10 mb-4 text-gray-900 leading-tight',
+      4: 'text-lg md:text-xl font-bold mt-8 mb-3 text-gray-900 leading-tight',
+      5: 'text-base md:text-lg font-bold mt-6 mb-2 text-gray-900 leading-tight',
+      6: 'text-sm md:text-base font-bold mt-4 mb-2 text-gray-900 leading-tight',
+    }
+    return <Tag className={styles[level] || styles[6]}>{children}</Tag>
+  },
+  Paragraph: ({ children }: { children: React.ReactNode }) => (
+    <p className="mb-7 leading-8 text-lg text-gray-800 whitespace-pre-wrap break-keep">{children}</p>
+  ),
+  Strong: ({ children }: { children: React.ReactNode }) => (
+    <strong className="font-bold text-primary">{children}</strong>
+  ),
+  Emphasis: ({ children }: { children: React.ReactNode }) => (
+    <em className="italic">{children}</em>
+  ),
+  Link: ({ href, children }: { href: string; children: React.ReactNode }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-accent hover:underline"
+    >
+      {children}
+    </a>
+  ),
+  List: ({ ordered, children }: { ordered: boolean; children: React.ReactNode }) => {
+    const Tag = ordered ? 'ol' : 'ul'
+    const className = ordered
+      ? 'list-decimal list-inside mb-5 space-y-1 text-foreground'
+      : 'list-disc list-inside mb-5 space-y-1 text-foreground'
+    return <Tag className={className}>{children}</Tag>
+  },
+  ListItem: ({ children }: { children: React.ReactNode }) => (
+    <li className="mb-1">{children}</li>
+  ),
+  CodeBlock: ({ children, language }: { children: string; language?: string }) => (
+    <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-6">
+      <code className={language ? `language-${language}` : ''}>{children}</code>
+    </pre>
+  ),
+  Code: ({ children }: { children: string }) => (
+    <code className="bg-gray-100 text-gray-900 px-1.5 py-0.5 rounded text-sm">{children}</code>
+  ),
+  Blockquote: ({ children }: { children: React.ReactNode }) => (
+    <blockquote className="border-l-4 border-gray-300 pl-4 my-6 italic text-gray-600">
+      {children}
+    </blockquote>
+  ),
+  HorizontalRule: () => <hr className="my-8 border-gray-200" />,
+  Image: ({ src, alt }: { src: string; alt?: string }) => (
+    <img src={src} alt={alt || ''} className="rounded-lg my-6 max-w-full h-auto" />
+  ),
+}
+
+// Markdoc schema/config
+const markdocConfig = {
+  nodes: {
+    heading: {
+      render: 'Heading',
+      attributes: {
+        level: { type: Number, required: true },
+      },
+    },
+    paragraph: {
+      render: 'Paragraph',
+    },
+    strong: {
+      render: 'Strong',
+    },
+    em: {
+      render: 'Emphasis',
+    },
+    link: {
+      render: 'Link',
+      attributes: {
+        href: { type: String, required: true },
+      },
+    },
+    list: {
+      render: 'List',
+      attributes: {
+        ordered: { type: Boolean, default: false },
+      },
+    },
+    item: {
+      render: 'ListItem',
+    },
+    fence: {
+      render: 'CodeBlock',
+      attributes: {
+        language: { type: String },
+        content: { type: String },
+      },
+    },
+    code: {
+      render: 'Code',
+    },
+    blockquote: {
+      render: 'Blockquote',
+    },
+    hr: {
+      render: 'HorizontalRule',
+    },
+    image: {
+      render: 'Image',
+      attributes: {
+        src: { type: String, required: true },
+        alt: { type: String },
+      },
+    },
+  },
+}
+
+export function MarkdocRenderer({ content }: MarkdocRendererProps) {
+  if (!content) {
+    return <p className="text-gray-500 italic">No content...</p>
+  }
+
+  // If content is already a string (markdown), parse it
+  if (typeof content === 'string') {
+    const ast = Markdoc.parse(content)
+    const transformed = Markdoc.transform(ast, markdocConfig)
+    return <>{Markdoc.renderers.react(transformed, React, { components })}</>
+  }
+
+  // If content is already an AST (from Keystatic)
+  try {
+    const transformed = Markdoc.transform(content, markdocConfig)
+    return <>{Markdoc.renderers.react(transformed, React, { components })}</>
+  } catch {
+    // Fallback: try to render as-is if it's already transformed
+    return <>{Markdoc.renderers.react(content, React, { components })}</>
+  }
+}
+</file>
+
+<file path="web/src/content/categories/episode/index.json">
+{
+  "title": "EPISODE",
+  "description": ""
+}
+</file>
+
+<file path="web/src/content/categories/insight/index.json">
+{
+  "title": "INSIGHT",
+  "description": ""
+}
+</file>
+
+<file path="web/src/content/links/1/index.json">
+{
+  "title": "1인가구 시대의 새로운 정책과 시도들, 그리고 앞으로의 과제",
+  "url": "https://www.korea.kr/news/contributePolicyView.do?newsId=148909168&call_from=naver_news",
+  "description": "",
+  "image": null,
+  "publishedAt": "2022-12-06T18:52:00.000Z"
+}
+</file>
+
+<file path="web/src/content/links/mz/index.json">
+{
+  "title": "전세사기 구제·청년고용 입법 … MZ마음 보듬어준 의원들",
+  "url": "https://n.news.naver.com/mnews/article/009/0005252285?sid=100",
+  "description": "",
+  "image": null,
+  "publishedAt": "2024-01-29T18:59:00.000Z"
+}
+</file>
+
+<file path="web/src/content/links/rising-biz-star/index.json">
+{
+  "title": "[Rising Biz & Star①]  “여행자는 새로운 모험을…시청자는 간접 여행을”",
+  "url": "https://n.news.naver.com/mnews/article/382/0000695532?sid=101",
+  "description": "",
+  "image": null,
+  "publishedAt": "2018-12-13T18:55:00.000Z"
+}
+</file>
+
+<file path="web/src/content/links/youth-future-participation/index.json">
+{
+  "title": "청년 미래의 문, ‘참여’만이 열쇠다",
+  "url": "https://n.news.naver.com/mnews/article/417/0000357525?sid=102",
+  "description": "",
+  "image": null,
+  "publishedAt": "2018-11-20T16:36:00.000Z"
+}
+</file>
+
+<file path="web/src/content/navigation/index.json">
+{
+  "title": "Main Menu",
+  "items": [
+    {
+      "label": "About",
+      "link": "/about"
+    },
+    {
+      "label": "Blog",
+      "link": "/blog"
+    },
+    {
+      "label": "Media",
+      "link": "/media"
+    }
+  ]
+}
+</file>
+
+<file path="web/src/content/posts/2025audit/index.mdoc">
+---
+title: "2025 국정감사 청년분야 우수의원을 선정했습니다"
+author: null
+mainImage: "/images/posts/2025audit.jpg"
+mainImageAlt: ""
+categories: ["insight"]
+publishedAt: "2025-11-15T15:21:00.000Z"
+---
+
+### **(사)한국청년유권자연맹은 매일경제와 함께 2025 국정감사 청년분야 우수의원을 선정했습니다**
+
+
+올해 국정감사를 지켜보면서, 솔직히 명태균 게이트를 비롯한 정쟁 이슈들로 정작 중요한 정책 논의가 밀리는거 같았습니다. 청년 문제는 늘 그렇게 뒤로 밀려나곤 하죠.
+
+하지만 그 와중에도 묵묵히 청년들의 현실을 파고든 의원들이 있었습니다. 한국청년유권자연맹에서 2025년 국정감사 청년분야 우수의원 5명을 선정했는데, 이번 선정이 특별한 이유는 여야를 가리지 않고 '실제로 변화를 만들어낼 수 있는 질의'를 한 의원들을 뽑았다는 점입니다.
+
+## **🏆 5명의 우수의원**
+
+### **이광희 의원 (더불어민주당)**
+
+불법 사채와 인신매매의 연결고리를 처음으로 국회에서 공론화했습니다. 청년들이 빚 때문에 범죄 조직에 넘어가는 구조적 문제를 정면으로 다뤘죠. 이건 단순한 질의가 아니라, 제도 개선으로 이어져야 할 의제입니다.
+
+### **정일영 의원 (더불어민주당)**
+
+학자금 대출 상환 유예 신청이 급증하고 있다는 데이터를 공개했습니다. 숫자 뒤에 숨겨진 청년들의 경제적 고통을 가시화한 거죠. 이런 데이터가 쌓여야 정책이 바뀝니다.
+
+### **김성원 의원 (국민의힘)**
+
+청년몰 사업에 1,600억이 투입됐는데, 폐업률이 45%라는 충격적인 수치를 밝혀냈습니다. 예산을 쓰는 것과 효과를 내는 것은 완전히 다른 문제라는 걸 보여준 케이스입니다.
+
+### **조지연 의원 (국민의힘)**
+
+해외 취업 사기가 만연한데 단속 체계는 허술하다는 점을 지적했습니다. 청년들이 '글로벌 기회'라는 말에 속아 피해를 보는 구조를 정부가 방치하고 있다는 거죠.
+
+### **정혜경 의원 (진보당)**
+
+런던베이글뮤지엄 과로사 의혹을 제기하며, 청년 노동자의 인권 문제를 다뤘습니다. 청년 정책이 창업과 취업에만 집중할 게 아니라, 일하는 환경 자체를 개선해야 한다는 메시지입니다.
+
+
+
+
+### **왜 이 선정이 중요한가**
+
+
+저는 여러 기업을 운영하고, 청년 단체에 활동하며, 대학에서 학생들을 가르치면서 청년 문제를 다양한 각도에서 봐왔습니다. 그래서 확신하는데, **청년 문제는 정당의 이해를 넘어 국가의 지속 가능성을 위한 과제**라는 것입니다.
+
+새로운 미래를 만드는 것은 화려한 정책 발표가 아니라, 이렇게 현장의 문제를 끈질기게 파고드는 것에서 시작됩니다. 이 의원들이 던진 질문들이 실제적인 제도 개선과 변화로 이어지길 기대합니다.
+
+
+### 기사 전문 보기
+
+최악 국감속 청년위해 뛴 국회의원들청년유권자연맹이 선정한 국정감사 우수의원 5인방 민주 정일영·국힘 김성원 등 정쟁 아닌 정책검증에 집중 불법사채·취업사기 실태 해부 해외 인신매매 범죄사슬 규명 올해 국정감사는 조희대 대법원장으로 시작해 최민희 더불매일경제전경운 기자(jeonmk.co.kr), 서동철 기자(sdchaos@mk.co.kr)최악의 국정감사 와중에도…청년들 위해 뛴 국회의원 있다는데청년유권자연맹이 선정한 국정감사 우수의원 5인방 민주 정일영·국힘 김성원 등 정쟁 아닌 정책검증에 집중 불법사채·취업사기 실태 해부 해외 인신매매 범죄사슬 규명 올해 국정감사는 정책 검증은 실종되고 막말과 고성, 욕매일경제전경운 기자(jeonmk.co.kr), 서동철 기자(sdchaos@mk.co.kr)
+
+
+#국정감사 #청년정책 #청년문제 #한국청년유권자연맹 #청연
+</file>
+
+<file path="web/src/content/posts/250828presentation/index.mdoc">
+---
+title: "국회 토론회 <1인가구 및 고립된 시민의 '연결된 사회'를 향한 정책토론회> 발제자 참여"
+author: null
+mainImage: "/images/posts/250828presentation.png"
+mainImageAlt: ""
+categories: ["insight"]
+publishedAt: "2025-08-28T07:08:00.000Z"
+---
+
+지난 8월 27일 국회 의원회관에서는 박주민 국회 보건복지위원장이 주최하고 사단법인 씨즈가 주관한 ‘1인 가구 및 고립된 시민의 연결된 사회를 향한 정책토론회’가 열렸다. 토론회에는 정재욱(도시혁신그룹 무브먼트) 대표, 이은애(사단법인 씨즈) 대표, 김상희(보건복지부) 인구아동정책국장, 백희정(광주 은둔외톨이지원센터) 센터장, 구도 케이(일본 소다테아게넷) 대표 등이 참석했다. 이번 토론회는 최근 54만 명으로 추산되는 고립·은둔 청년 문제를 해결하기 위한 노력의 하나로 마련됐으며, 주거와 일 경험 등 실질적 지원을 확대하고 민간·공공 협력을 통해 지역 돌봄망을 구축해야 한다는 문제의식이 공유됐다.
+
+## 발제로 전한 핵심 메시지
+
+발제자로서 나는 고립·은둔 청년 문제가 개인의 문제가 아닌 사회의 구조적 문제임을 강조했다. 조사에 따르면 국내 고립·은둔 청년은 약 54만 명으로 추산되고 이들 가운데 4명 중 1명이 자살 시도를 한 것으로 나타나 사회적 손실만 연간 7조 원에 달한다.
+
+**주거·돌봄·관계의 중요성** – 고립 상태에서 가장 필요로 하는 것은 안정된 집, 심리·정서적 돌봄과 관계다. 단순한 소득 지원만으로 문제를 해결할 수 없으며, 주거 안정과 정서적 지원이 함께 마련돼야 한다.
+
+**예방적 접근** – 그동안의 지원 대책은 사후적인 접근에 머물러 있어 한계가 있었다. 고립이 발생한 뒤 지원하기보다 학교·지역사회에서 조기 징후를 발견하고 미리 예방할 수 있는 체계를 구축해야 한다.
+
+**정책 제안** – 정부 차원의 ‘연결된 사회 위원회’와 같은 컨트롤 타워를 만들고, 지역 돌봄센터와 복지 시설을 촘촘하게 연결하며 코리빙(Co‑living) 등 공동체 주거를 확대하는 것을 제안했다. 또한 고립·은둔 청년에 대한 인식 개선 활동도 필요하다고 강조했다.
+
+발제에서는 국내 사례로 ‘안 무서운 회사’ 프로그램과 '강남 1인 가구 커뮤니티센터'를 소개했다. 전자는 셰어하우스에서 은둔형 외톨이들이 공동체 생활을 하며 자립을 준비하는 프로그램이고, 후자는 1인 가구들이 함께 어울려 다양한 프로그램과 모임을 진행하며 기댈 수 있는 공동체를 형성하는 사례다. 이러한 사례는 ‘살 만한 집’과 ‘함께할 사람’을 제공할 때 고립에서 벗어날 수 있음을 보여준다.
+
+## 공감과 연대를 강조한 다른 발표들
+
+두 번째 발제자인 이은애 씨즈 대표는 1인 가구 청년들이 소득·일자리·건강·사회적 자본 등 여러 측면에서 빈곤을 겪고 있다는 점을 지적하며, 쌍방향 온라인 플랫폼, 지역 돌봄망 허브화, 주거형 자립이행터와 자기 학습 패키지 바우처화, 자연 치유 사회 처방 등 복합적인 솔루션을 제시했다. 이 대표는 영국의 ‘커뮤니티 링커’ 사례를 들며, 중앙 정부는 설계와 캠페인만 담당하고 실제 연결은 지역의 실무자들이 수행하는 방식도 소개했다.
+
+또한 은둔 청년의 80%가 고립을 넘어서 자립을 원한다는 조사 결과를 공유하고, 씨즈에서 운영하는 ‘두더잡’ 프로그램처럼 일 경험을 제공하는 것이 중요한 돌파구가 된다고 말했다. 일 경험에 참여한 청년들은 4개월 만에 은둔 경향이 절반 이하로 감소했다는 데이터가 제시돼 일 경험 프로그램의 효과가 주목받았다.
+
+## 정책사례와 해외 동향
+
+이어진 정책 사례 발표에서 보건복지부 김상희 국장은 고독사 예방법을 기반으로 1인 가구 발굴과 조기 알림, 일상 돌봄 지원 등을 추진하고 있으며, 위기 청년 전문기관 인증 제도 개발을 준비 중이라고 밝혔다. 백희정 센터장은 상담만으로는 부족하며 다양한 프로그램 설계와 취업 연계가 필요하다고 말하고, 지역 여건과 연령을 고려한 정책과 취업 이후의 안착을 위한 지원 방식 변화를 제안했다.
+
+일본 소다테아게넷의 구도 케이 대표는 2021년부터 고립·고독 담당관을 신설하고 2023년에 법률을 제정해 2024년부터는 법에 근거한 예산으로 지자체가 다양한 프로그램을 실행할 수 있도록 했다는 일본 사례를 소개했다. 야간 이바쇼 운영, 일자리 종합 지원, 히키코모리 가족 지원 등 NPO의 다양한 노력이 공유돼 국제적인 벤치마킹의 필요성을 느꼈다.
+
+## 청년들의 솔직한 목소리와 인상 깊었던 순간
+
+토론회 마지막에는 고립·은둔 청년 당사자들이 직접 참여한 라운드테이블이 이어졌다. 한 참여 청년은 코리빙하우스처럼 같은 경험을 가진 청년들이 모일 수 있는 공간의 필요성에 공감했고, 씨즈에서 카페 일 경험을 통해 스스로에 대한 자신감을 얻었다고 고백했다. 또 다른 청년은 ‘쉬었음’ 청년의 문제를 개인의 문제로만 보지 말고 사회적·구조적 문제로 바라봐야 한다며, 언론이 낙인을 지양하고 공감과 이해를 넓혀야 한다고 강조했다.
+
+또 다른 참가자는 국민취업제도나 내일배움카드와 같은 기존 제도가 은둔 상태의 청년에게는 적합하지 않았다며, 비슷한 처지의 사람들과 만나 속마음을 털어놓는 경험이 더 큰 도움이 됐다고 했다. 이러한 목소리는 정책 설계에 당사자의 참여를 확대해야 함을 일깨워주었다.
+
+## 마무리 소회
+
+이번 토론회는 고립·은둔 청년 문제가 단순히 개인의 문제가 아니라 사회의 구조적 문제이며, 주거와 돌봄, 관계를 중심으로 한 예방적·통합적 접근이 필요하다는 데 공감대를 형성했다. 발제자로서 **연결된 사회**를 위한 구체적인 정책과 성공 사례를 소개하고, 현장의 목소리를 함께 들으며 더 많은 숙제를 안고 돌아왔다. 앞으로도 민간과 공공이 함께 지역 돌봄망을 구축하고, 청년들이 서로 의지할 수 있는 공간과 일 경험을 확대하는 데 힘을 모으려 한다.
+
+
+
+**[관련 기사]**
+
+고립·은둔 청년, 사회로 나가는 첫걸음…”주거 지원·일경험 확대 중요”[뉴스웍스=김아현 기자] 고립·은둔 청년 문제 해결이 시대적 과제로 떠오르는 가운데 전문가들이 정책 제언에 나섰다. 고립 청년들에게 주거 공간, 일경험 등 지원을 확대하고, 민간·공공 협력을 통해 지역 돌봄망을 구축해야 한다는 목소리가 나왔다.27일 국회 의원회관에서는 ‘1인 가구 및 고립된 시민의 연결된 사회를 향한 정책 토론회’가 열렸다. 토론회는 박주민 국회 보건복지위원장, 더불어민주당 서울시당 새로운서울준비특별위원회가 주최하고 사단법인 씨즈가 주관했다. 토론회에는 ▲정재욱 도시혁신그룹 무브먼트 대표 ▲이은애 사단법인 씨즈 대뉴스웍스
+</file>
+
+<file path="web/src/content/posts/25legexpo/index.mdoc">
+---
+title: "국회 입법박람회 '대한민국 청년정책어워즈' 부스 참여"
+author: null
+mainImage: "/images/posts/25legexpo.png"
+mainImageAlt: ""
+categories: ["episode"]
+publishedAt: "2025-09-25T07:21:00.000Z"
+---
+
+## 국회 입법박람회란?
+
+2025년 9월 23일부터 24일까지 국회 중앙잔디광장과 국회 경내에서는 **2025 국회 입법박람회**가 열렸다. 행사 슬로건은 “국민 참여로 열린 길, 입법으로 여는 미래”였고, 대한민국 국회·정부·지방자치단체와 시민들이 한데 모여 우수한 입법과 정책을 홍보·논의하는 축제의 장이었다.
+
+국회입법박람회국민 참여로 열린 길, 입법으로 여는 미래국회입법박람회
+
+이 박람회는 국민과 국회, 정부, 지방자치단체 등 다양한 주체가 모여 우수한 입법과 정책을 홍보하고 논의하며, 시민들의 다양한 목소리를 직접 청취해 해결 방안을 모색하는 것이 목적이다. 이번 박람회는 **기후위기 극복**, **지방소멸 대응**, **민생경제 활성화**라는 세 가지 의제에 초점을 맞췄는데 행사 기간 동안 다양한 강연과 토론, 체험부스가 마련돼 입법이 우리의 삶과 어떻게 맞닿아 있는지를 보여 주었다.
+
+## (사)한국청년유권자연맹, <대한민국 청년정책 어워즈> 부스 참여
+
+나는 사단법인 **한국청년유권자연맹의** 대표로 이번 박람회에 참가신청을 했고, '대한민국 청년정책 어워즈'라는 이름으로 부스를 만들게 되었다. '대한민국 청년정책 어워즈'는 '열고닫기'(청년정책), '유스나우'(글로벌), '로글로'(로컬) 등 각 분야를 대표하는 소셜벤처와 단체가 공동으로 개최하여 청년정책 발굴·글로벌 교류·지역 콘텐츠 개발 등 전문성을 살린 다채로운 협력 모델을 선보이고 있다.
+
+부스에서는 2023~2024년 청년들이 직접 참여해 선정한 **대한민국 청년정책 어워즈** 수상 정책도 전시해, 공공/지자체/기업/NGO에서 진행한 주거·일자리·금융 등 청년 생활과 밀접한 정책 성과를 소개했다
+
+또 우리 부스는 이번 박람회 기간에 약 1,000명의 시민과 청년을 대상으로 "2025년 청년이 바라는 민생정책"에 대한 의견을 들었다. 아무래도 일자리와 주거에 대한 의견이 가장 많이 나왔고, 이러한 의견도 잘 정리해서 앞으로 정책제안과 개발에 더욱 힘쓸 예정이다.
+
+
+
+## 입법박랍회 프로그램과 분위기
+
+행사장은 전반적으로 축제 같은 분위기였다. 국회 마당에 설치된 중앙 무대에서는 다양한 공연과 토크콘서트가 번갈아 진행됐고, 각 부스에서는 현장 참여자들이 **입법 아이디어를 즉석에서 적어 붙이는 게시판**을 운영했다. 국회 의원들도 부스를 방문하여 시민들과 대화를 나누며 "국민과 국회가 함께 만드는 입법"의 의미를 강조했다. 우리 부스에는 여야의 많은 국회의원들이 방문해 주었는데, “청년 정책을 만들 때 청년의 목소리가 제일 중요하다”는 말과 함께 우리 연맹의 활동을 응원해 주었다.
+
+국민의 의견을 듣는 '국민입법제안소''2026 예산안' 안내 부스개인적으로 가장 크리에이티브하다고 느꼈던 건설노조의 부스
+
+## 개인적인 소감과 앞으로의 다짐
+
+1인칭의 관점에서 이번 박람회는 단순한 행사 참여를 넘어 **정책과 생활을 연결하는 다리**가 되는 경험이었다. 기사에서 언급한 것처럼 한국청년유권자연맹은 **청년들이 직접 정책을 발굴·평가하고 제안하는 과정의 중요성을 확인했다**
+
+현장에서 만난 청년들의 고민은 주거, 일자리, 기후, 지역 문제 등 다양한 주제로 뻗어 있었지만, 공통적으로 "우리의 의견이 정책에 반영되길 바란다"는 열망이 강했다.
+
+입법박람회는 이 열망을 제도권으로 연결해 주는 통로였다. 국회·정부·지자체 관계자들과 시민들이 한 공간에서 자유롭게 소통하는 모습은 "국민 참여로 열린 길"이라는 슬로건을 실감하게 했다. 특히 저에게 의미 있었던 점은 청년과 국회의 거리가 생각보다 가깝다는 사실이다. 정책은 멀리 있는 것이 아니라, 우리의 일상을 바꾸는 힘이며 우리가 직접 만들어 갈 수 있는 것임을 다시 한 번 깨달았다.
+
+이번 경험을 바탕으로, 우리 연맹은 **대한민국 청년정책 어워즈**와 같은 참여 플랫폼을 더욱 발전시켜 청년들의 의견을 체계적으로 수렴하고, 실질적인 정책 제안으로 이어질 수 있도록 노력할 계획이다. 또한, 박람회에서 수집한 제안과 이야기를 정리하여 국회 상임위원회와 관련 부처에 전달하고, 실제 입법과정에 반영될 수 있도록 계속적으로 모니터링할 것이다.
+</file>
+
+<file path="web/src/content/posts/about/index.mdoc">
+---
+title: "About"
+author: null
+mainImage: null
+mainImageAlt: ""
+categories: []
+publishedAt: "2025-10-04T05:15:52.000Z"
+---
+
+
+
+# 정재욱
+
+## 새로운 미래를 만드는 
+IMPACT FOUNDER
+
+
+
+### 가치 있는 공간과 혁신적인 기업을 만들고, 
+다음 세대를 이끌 창업가와 리더를 키웁니다.
+
+
+**#스타트업 #창업 #벤처투자 #커뮤니티 #공간개발 #도시재생 #청년정책 #1인가구**
+
+
+
+# **What I Do**
+
+#### 도시혁신그룹 무브먼트 주식회사 / 대표 (2021. 6. ~ 현재)
+
+벤처기업 · 소셜벤처기업
+
+서울글로벌센터, 글로벌창업이민센터 운영
+
+서울시 창업거점 ‘Y밸리’ <용산전자 상상가> 센터장
+
+서울시 메이커스페이스 <디지털대장간> 센터장
+
+#### 서강대학교 스타트업 연계전공 / 겸임교수 (2024. 9. ~ 현재)
+
+담당과목 : 실전 스타트업 (캡스톤디자인) 입문
+
+#### 경희대학교 골프산업학과 / 겸임교수 (2024. 3. ~ 현재 ) 
+
+담당과목 : 골프콘텐츠 개발과 창업
+
+#### 주식회사 에프아이티파운더스 / 이사 · Co-founder (2023.10. ~ 현재)
+
+미래세대를 위한 액셀러레이터 · 투자사
+
+#### (사)한국청년유권자연맹 / 상임대표 (2023 ~ 현재)
+
+행정안전부 소관 사단법인
+
+
+
+# Profile
+
+## Education
+
+KAIST 경영학 석사(MBA)
+
+서강대학교 언론학 석사(광고홍보) 석사논문 : 순환적 의제설정과정을 통해 살펴 본 정책 커뮤니케이션 메시지 연구 : 서울시 의제설정과정 참여자들의 메시지에 대한 언어 네트워크 분석을 중심으로
+
+경희대학교 경영학사(스포츠경영), 체육학사
+
+## Work Experience
+
+#### 강남 1인가구 커뮤니티센터 STAY.G / 센터장 (2019. 6. ~ 2021. 6.)
+
+****전국 최초의 1인가구 지원 커뮤니티·공간****
+
+#### (주)메리홀리데이 / 이사 · Co-founder (2017. 7. ~ 2019. 6.)
+
+IT벤처인증 기업
+
+모바일 플랫폼(여행 라이브방송 'Tripme LIVE' : 6만 다운로드) 기획 및 운영
+
+Google Playstore 여행 카테고리 신규 2위/매출2위
+
+두바이 정보통신 박람회 (GITEX) 참여
+
+#### 서울시 뉴미디어담당관 / 주무관
+(2013. 6. ~ 2017. 6.)
+
+서울시 디지털 커뮤니케이션, 온라인 정책홍보 담당
+
+서울시 공식 소셜미디어 채널 운영
+
+서울시 시정관련 콘텐츠 기획 및 제작
+
+서울시장 공식 홈페이지 '소셜시장실' 재구축 및 운영
+
+서울시 시정관련 빅데이터 분석 보고서 작성
+
+#### 고양FC / 단장·CEO (2013)
+
+대한축구협회 K3리그 참여팀
+
+#### 국회 의원실 / 정책비서
+(2012. 5 ~ 2013. 2)
+
+기획재정위원회 소관(기획재정부, 국세청, 관세청, 한국은행, 수출입은행, 한국투자공사) 정책 및 감사업무
+
+경제통계(OECD, IMF) 자료분석 및 시각화
+
+의원실 정책홍보 및 홍보채널 (홈페이지, 블로그, SNS) 운영총괄
+
+#### (사)한국청년유권자연맹 / 간사
+(2010. 1 ~ 2011. 3)
+
+청년정책 개발
+
+청년 대상 리더십, 교육 프로그램 기획 및 운영
+
+YLP(영리더십 프로그램)
+
+국회인턴 프로그램
+
+청연리더스클럽
+
+국회 정책토론회 기획 및 운영
+
+정치/투표참여 캠페인 진행
+
+국회, 정부부처, 지자체, 단체협력 및 공동사업 진행
+
+## Activities
+
+#### 창업·투자
+
+중소벤처기업부 창업기획자 전문인력
+
+창업진흥원 창업사업 평가위원 후보자
+
+한국사회적기업진흥원 자문위원
+
+(사)한국엔젤투자협회 적격엔젤투자자
+
+케이사프 글로벌 AI 제1호 투자조합 GP
+
+케이사프 글로벌 제2호 투자조합 GP
+
+케이사프 파운더 투자조합 1호 GP
+
+전 서울시 청년정책네트워크 일자리분과 창업분과장
+
+
+
+#### 도시·공간
+
+(사)한국공유경제진흥원 부원장
+
+(사)아름다운주택포럼 이사
+
+충남개발공사 기술자문위원
+
+민달팽이주택협동조합 조합원
+
+전 LH청년위원회 위원장
+
+전 인천도시공사 기술심사위원·기술자문위원
+
+전 인천항만공사 유휴부지 활성화 워킹그룹 자문위원
+
+전 동대문구 공유촉진위원회 위원
+
+
+
+#### 청년·정책
+
+(사)한국청년유권자연맹 상임대표
+
+강남구 청년정책위원회 공동대표
+
+인천광역시교육청 홍보자문관 (2023.8~)
+
+경기도 정책연구용역심의위원회 위원 (2023.8~)
+
+전 서울시 청년자치정부 추진위원회 공동추진위원장
+
+전 경기도 인구정책조정위원회 위원
+
+전 서울시 중구 1인가구 정책지원단 위원
+
+
+
+#### 기타
+
+전 LIME KOREA 정책고문
+
+전 멘사코리아 홍보위원회 위원장
+
+전 강남구 역삼2동 주민자치위원회 위원
+
+### Award
+
+2023 KAIST 경영대학 리더십상
+
+2021 국토교통부 장관표창
+
+2018 SK텔레콤-한국관광공사 '스마트관광앱 공모전' 최우수상
+
+
+
+## 강연·기고·공동 프로젝트 등
+함께 하고 싶은게 있으시다면 언제든 편하게 연락주세요!
+
+
+
+**📧 ****nyspirit@mensakorea.org**
+</file>
+
+<file path="web/src/content/posts/aimvp/index.mdoc">
+---
+title: "일주일 동안 3개의 서비스를 만들었다! - AI 시대의 MVP 혁명"
+author: null
+mainImage: "/images/posts/aimvp.jpg"
+mainImageAlt: ""
+categories: ["insight"]
+publishedAt: "2025-11-30T14:55:00.000Z"
+---
+
+## 일주일 동안 3개의 서비스를 만들었다: AI 시대의 MVP 혁명과 도구의 이동
+
+
+
+"일주일 만에 3개의 서비스를 론칭한다."
+
+불과 1년 전만 해도 이 문장은 허풍이거나, 퀄리티와의 타협을 의미했을 것이다. 하지만 지금 우리는 개발의 패러다임이 송두리째 뒤바뀌는 변곡점 위에 서 있다.
+
+지난 일주일, 나는 머릿속을 부유하던 수많은 아이디어를 현실로 끄집어내며 마치 **'불을 처음 발견한 원시인'**이 된 듯한 전율을 느꼈다.
+
+이 글은 그 치열했던 일주일간의 기록이자, GenSpark에서 v0로, 다시 Cursor와 Antigravity로 이어지는 플랫폼의 이동(Platform Hopping)을 통해 몸소 체험한 'MVP 혁명'에 대한 회고다.
+
+
+
+### 1. 3개의 서비스, 7일의 질주
+
+
+
+커뮤니티, 금융 유틸리티, 그리고 외국인 지원 서비스까지. 분야는 제각각이었지만 목표는 단 하나였다. **"가장 빠르고 효율적으로 핵심 가치를 검증한다."**
+
+
+
+#### **① Seoul Founders Club (서울 파운더스 클럽)**
+
+
+
+**URL:** https://seoulfounders.club/
+
+**기획 의도:** 서울은 역동적인 창업 도시지만, 창업가들이 깊이 있게 연결되고 실질적인 리소스를 나눌 '밀도 높은' 커뮤니티는 여전히 부족하다. 단순한 네트워킹을 넘어, 서로의 성장을 견인하는 허브가 필요했다.
+
+**주요 기능:** Founder Directory(멤버 프로필), Private Board(폐쇄형 정보 공유), Event RSVP.
+
+**Tech Stack:** Typescript, Next.js, Tailwind CSS, Supabase
+
+
+
+#### **② Moneylife (머니라이프)**
+
+
+
+**URL:** https://www.moneylife.kr/
+
+**기획 의도:** 대출 이자나 만기 수령액을 계산하기 위해 엑셀을 켜거나, 광고로 뒤덮인 블로그를 헤매는 경험을 끝내고 싶었다. 깔끔한 UI에서 즉각적인 답을 주는 도구다.
+
+**주요 기능:** 대출/목돈 계산기, 복리 효과 시각화 차트, 직관적인 대시보드.
+
+**Tech Stack:** React, Vite, Shadcn UI, Chart.js
+
+
+
+#### **③ KOPILOT (코파일럿)**
+
+
+
+**URL:** http://kopilot.kr/
+
+**기획 의도:** 외국인 친구들이 겪는 비자, 주거, 행정 문제의 정보 비대칭은 생각보다 심각하다. 한국 생활의 든든한 '부기장'처럼 24시간 정보를 제공하는 AI가 절실했다.
+
+**주요 기능:** 다국어 지원 AI Q&A, 정착 타임라인별 체크리스트(유심, 외국인등록 등).
+
+**Tech Stack:** Next.js, Vercel AI SDK, OpenAI API (GPT-4o)
+
+
+
+### 2. 혁명의 도구들: 플랫폼의 이동 (Platform Hopping)
+
+
+
+이번 프로젝트의 핵심은 하나의 만능 도구에 의존한 것이 아니라, **각 개발 단계에서 최적의 퍼포먼스를 내는 플랫폼으로 유연하게 갈아타며(Hopping) 작업했다**는 점이다.
+
+개발자가 코드를 한 줄씩 쌓아 올리는 방식이 아니다. 이미 준비된 거인들의 어깨를 민첩하게 옮겨 다니며 조립하는 과정이었다.
+
+
+
+#### **Step 1. GenSpark **
+
+
+
+가장 먼저 AI Super Agent를 표방하는 GenSpark에서 시작했다. 막연한 아이디어를 시각화하고 초기 구조를 잡는 단계다.
+
+**장점:** 개발 접근성이 매우 높다. 실시간 미리보기(Preview)를 통해 내 생각이 어떻게 구현될지 즉시 확인할 수 있다.
+
+**단점:** 간단한 프로토타이핑은 훌륭하지만, 복잡한 로직이나 백엔드가 필요한 작업에는 한계가 명확하다.
+
+
+
+#### **Step 2. v0**
+
+
+
+기획이 서면 v0로 이동한다. 텍스트로 설명하면 즉시 코드를 짜주고 UI까지 그려낸다.
+
+**장점:** 디자인 시안 작업이 사라진다. "토스처럼 깔끔한 금융 서비스 UI를 그려줘"라고 주문하면 코드가 쏟아진다. 속도 면에서 압도적이다.
+
+**단점:** UI는 훌륭하지만, 복잡한 비즈니스 로직까지 완벽하게 구현하기엔 아직 무리가 있다.
+
+
+
+#### **Step 3. Cursor **
+
+
+
+v0가 만들어준 뼈대를 들고 Cursor 에디터로 넘어왔다. 이곳이 실제 제품을 만드는 '공장'이다.
+
+**장점:** 현존하는 최고의 AI 코딩 에디터다. 프로젝트의 전체 맥락(Context)을 이해하고 있어, "이 버튼을 누르면 이자율이 계산되게 해줘"라는 자연어 명령을 완벽한 코드로 변환한다. 체감상 이전 단계보다 80% 이상 속도가 빨라졌다.
+
+**단점:** AI가 작성한 코드에 버그가 발생할 경우, 코드를 전혀 읽을 줄 모른다면 디버깅 난이도가 급격히 올라갈 수 있다.
+
+
+
+#### **Step 4. Antigravity **
+
+
+
+마지막으로 Google이 발표한 Antigravity를 만났을 때, 나는 또 다른 신세계를 경험했다.
+
+**장점:** Cursor에 비해 초기 세팅이 간편해 비개발자도 빠르게 적응할 수 있다. 구글 생태계 내에서 작동하다 보니 Chrome을 활용한 브라우저 제어와 모니터링이 자동으로 이루어진다.
+
+**단점:** 현재 무료 서비스 중이라 토큰 제한(Rate Limit)이 매우 타이트하다. 한도에 도달하면 5시간을 기다려야 하는 점은 아쉬웠다.
+
+
+
+#### **+ Infra (Supabase, Vercel)**
+
+데이터베이스와 호스팅까지 클라우드 기반으로 한 번에 처리되니 배포 과정이 허무할 정도로 간단해졌다. FTP로 파일을 한 땀 한 땀 전송하던 시절을 떠올리면, 정말 새로운 차원이 열렸음을 실감한다.
+
+
+
+### 3. 우린 이제 무엇을 해야 할까?
+
+
+
+일주일간 3개의 서비스를 만들며 느낀 감정은 **'현기증이 날 정도의 속도감'**이었다.
+
+우리는 지금 **'아이디어가 소프트웨어가 되는 비용'이 0에 수렴하는 시대**를 살고 있다. 과거 스타트업이 개발자와 디자이너를 채용해 몇 달을 매달려야 했던 MVP 개발이, 이제는 며칠, 아니 몇 시간이면 끝낼 수 있는 작업이 되었다.
+
+이러한 변화는 단순한 생산성의 향상을 넘어선다. 기술의 장벽이 무너진 지금, 우리에게 남은 본질적인 질문은 '어떻게(How) 만들 것인가'가 아니다.
+
+****
+
+**"무엇을(What), 그리고 왜(Why) 만들 것인가?"**
+
+
+
+이제 더 이상 개발자가 없어서, 자금이 없어서, 기술이 부족해서 문제를 해결하지 못한다는 핑계는 유효하지 않다. 도구는 이미 책상 위에 준비되었다.
+
+나는 앞으로 이 혁명적인 도구들을 무기 삼아 머릿속의 가설들을 더 빠르게 검증하고, 세상의 문제들을 하나씩 해결해 나갈 것이다.
+
+****
+
+**당신은 지금 어떤 아이디어를 망설이고 있는가? 이제 시작할 때다.**
+
+
+
+**참고로 여러분이 글을 읽고 있는 이 블로그도 AI를 통해 새로 만들었다. 이제는 모든걸 스스로 만들 수 있는 시대이다!*
+</file>
+
+<file path="web/src/lib/keystatic/reader.ts">
+import { createReader } from '@keystatic/core/reader'
+import keystaticConfig from '../../../keystatic.config'
+
+export const reader = createReader(process.cwd(), keystaticConfig)
+
+// Types
+export interface Post {
+  slug: string
+  title: string
+  author: string | null
+  mainImage: string | null
+  mainImageAlt: string | null
+  categories: (string | null)[]
+  publishedAt: string | null
+  body: any // Markdoc document
+}
+
+export interface Category {
+  slug: string
+  title: string
+  description: string | null
+}
+
+export interface Link {
+  slug: string
+  title: string
+  url: string
+  description: string | null
+  image: string | null
+  publishedAt: string | null
+}
+
+export interface Author {
+  slug: string
+  name: string
+  image: string | null
+  bio: string | null
+}
+
+export interface NavigationItem {
+  label: string
+  link: string
+}
+
+export interface Navigation {
+  title: string
+  items: NavigationItem[]
+}
+
+// Helper to get all posts (excluding about)
+export async function getPosts(): Promise<Post[]> {
+  const slugs = await reader.collections.posts.list()
+  const posts = await Promise.all(
+    slugs
+      .filter(slug => slug !== 'about')
+      .map(async (slug) => {
+        const post = await reader.collections.posts.read(slug)
+        if (!post) return null
+        return {
+          slug,
+          title: post.title || '',
+          author: post.author,
+          mainImage: post.mainImage,
+          mainImageAlt: post.mainImageAlt,
+          categories: post.categories || [],
+          publishedAt: post.publishedAt,
+          body: post.body,
+        }
+      })
+  )
+
+  return posts
+    .filter((post): post is Post => post !== null)
+    .sort((a, b) => {
+      if (!a.publishedAt || !b.publishedAt) return 0
+      return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+    })
+}
+
+// Helper to get latest N posts
+export async function getLatestPosts(limit: number = 6): Promise<Post[]> {
+  const posts = await getPosts()
+  return posts.slice(0, limit)
+}
+
+// Helper to get a single post by slug
+export async function getPost(slug: string): Promise<Post | null> {
+  const post = await reader.collections.posts.read(slug)
+  if (!post) return null
+
+  return {
+    slug,
+    title: post.title || '',
+    author: post.author,
+    mainImage: post.mainImage,
+    mainImageAlt: post.mainImageAlt,
+    categories: post.categories || [],
+    publishedAt: post.publishedAt,
+    body: post.body,
+  }
+}
+
+// Helper to get all categories
+export async function getCategories(): Promise<Category[]> {
+  const slugs = await reader.collections.categories.list()
+  const categories = await Promise.all(
+    slugs.map(async (slug) => {
+      const category = await reader.collections.categories.read(slug)
+      if (!category) return null
+      return {
+        slug,
+        title: category.title || '',
+        description: category.description,
+      }
+    })
+  )
+
+  return categories
+    .filter((cat): cat is Category => cat !== null)
+    .sort((a, b) => a.title.localeCompare(b.title))
+}
+
+// Helper to get category title by slug
+export async function getCategoryTitle(slug: string): Promise<string> {
+  const category = await reader.collections.categories.read(slug)
+  return category?.title || slug
+}
+
+// Helper to get all links
+export async function getLinks(): Promise<Link[]> {
+  const slugs = await reader.collections.links.list()
+  const links = await Promise.all(
+    slugs.map(async (slug) => {
+      const link = await reader.collections.links.read(slug)
+      if (!link) return null
+      return {
+        slug,
+        title: link.title || '',
+        url: link.url || '',
+        description: link.description,
+        image: link.image,
+        publishedAt: link.publishedAt,
+      }
+    })
+  )
+
+  return links
+    .filter((link): link is Link => link !== null)
+    .sort((a, b) => {
+      if (!a.publishedAt || !b.publishedAt) return 0
+      return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+    })
+}
+
+// Helper to get latest N links
+export async function getLatestLinks(limit: number = 6): Promise<Link[]> {
+  const links = await getLinks()
+  return links.slice(0, limit)
+}
+
+// Helper to get an author by slug
+export async function getAuthor(slug: string): Promise<Author | null> {
+  const author = await reader.collections.authors.read(slug)
+  if (!author) return null
+
+  return {
+    slug,
+    name: author.name || '',
+    image: author.image,
+    bio: author.bio,
+  }
+}
+
+// Helper to get navigation
+export async function getNavigation(): Promise<Navigation> {
+  const nav = await reader.singletons.navigation.read()
+
+  if (!nav) {
+    return {
+      title: 'Main Menu',
+      items: [
+        { label: 'About', link: '/about' },
+        { label: 'Blog', link: '/blog' },
+        { label: 'Media', link: '/media' },
+      ],
+    }
+  }
+
+  return {
+    title: nav.title || 'Main Menu',
+    items: (nav.items || []).map(item => ({
+      label: item.label || '',
+      link: item.link || '',
+    })),
+  }
 }
 </file>
 
@@ -380,82 +1437,6 @@ const nextConfig: NextConfig = {
 export default nextConfig;
 </file>
 
-<file path="web/sanity.cli.ts">
-/**
-* This configuration file lets you run `$ sanity [command]` in this folder
-* Go to https://www.sanity.io/docs/cli to learn more.
-**/
-import { defineCliConfig } from 'sanity/cli'
-
-const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID
-const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET
-
-export default defineCliConfig({ api: { projectId, dataset } })
-</file>
-
-<file path="web/sanity.config.ts">
-'use client'
-
-/**
- * This configuration is used to for the Sanity Studio that’s mounted on the `/app/studio/[[...tool]]/page.tsx` route
- */
-
-import {visionTool} from '@sanity/vision'
-import {defineConfig} from 'sanity'
-import {structureTool} from 'sanity/structure'
-
-// Go to https://www.sanity.io/docs/api-versioning to learn how API versioning works
-import {apiVersion, dataset, projectId} from './src/sanity/env'
-import {schema} from './src/sanity/schemaTypes'
-import {structure} from './src/sanity/structure'
-
-export default defineConfig({
-  basePath: '/studio',
-  projectId,
-  dataset,
-  // Add and edit the content schema in the './sanity/schemaTypes' folder
-  schema,
-  plugins: [
-    structureTool({structure}),
-    // Vision is a tool that lets you query your content with GROQ in the studio
-    // https://www.sanity.io/docs/the-vision-plugin
-    visionTool({defaultApiVersion: apiVersion}),
-  ],
-})
-</file>
-
-<file path="web/src/app/(studio)/layout.tsx">
-export default function StudioLayout({
-    children,
-}: {
-    children: React.ReactNode
-}) {
-    return <>{children}</>
-}
-</file>
-
-<file path="web/src/app/(studio)/studio/[[...tool]]/page.tsx">
-/**
- * This route is responsible for the built-in authoring environment using Sanity Studio.
- * All routes under your studio path is handled by this file using Next.js's catch-all routes:
- * https://nextjs.org/docs/routing/dynamic-routes#catch-all-routes
- *
- * You can learn more about the next-sanity package here:
- * https://github.com/sanity-io/next-sanity
- */
-
-import { NextStudio } from 'next-sanity/studio'
-import config from '../../../../../sanity.config'
-
-export const dynamic = 'force-static'
-
-export { metadata, viewport } from 'next-sanity/studio'
-
-export default function StudioPage() {
-    return <NextStudio config={config} />
-}
-</file>
-
 <file path="web/src/app/api/og/route.ts">
 import { NextResponse } from 'next/server';
 import ogs from 'open-graph-scraper';
@@ -480,43 +1461,6 @@ export async function GET(request: Request) {
         console.error('OG Scraping Error:', error);
         return NextResponse.json({ error: 'Failed to fetch metadata' }, { status: 500 });
     }
-}
-</file>
-
-<file path="web/src/app/insights/page.tsx">
-import { client } from "@/sanity/lib/client";
-import { LINKS_QUERY } from "@/sanity/lib/queries";
-import { LinkCard } from "@/components/features/LinkCard";
-
-export const revalidate = 60;
-
-export default async function InsightsPage() {
-    const links = await client.fetch(LINKS_QUERY);
-
-    return (
-        <main className="py-12 px-6 md:px-12 lg:px-24 max-w-7xl mx-auto w-full">
-            <div className="flex flex-col gap-12">
-                <div className="flex flex-col gap-4 border-b border-gray-100 pb-8">
-                    <h1 className="text-4xl font-bold tracking-tight text-primary">Insights</h1>
-                    <p className="text-lg text-secondary max-w-2xl">
-                        A curated collection of articles, news, and resources that inspire.
-                    </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {links.length > 0 ? (
-                        links.map((link: any) => (
-                            <LinkCard key={link._id} link={link} />
-                        ))
-                    ) : (
-                        <p className="text-secondary col-span-full py-12 text-center bg-gray-50 rounded-lg">
-                            No curated links yet.
-                        </p>
-                    )}
-                </div>
-            </div>
-        </main>
-    );
 }
 </file>
 
@@ -556,29 +1500,157 @@ export default function RootLayout({
 }
 </file>
 
+<file path="web/src/app/media/page.tsx">
+import { getLinks } from '@/lib/keystatic/reader'
+import { LinkCard } from '@/components/features/LinkCard'
+
+export const revalidate = 60
+
+export default async function MediaPage() {
+    const links = await getLinks()
+
+    return (
+        <main className="flex flex-col gap-12 py-12 px-6 md:px-12 lg:px-24 max-w-7xl mx-auto">
+            {/* Header */}
+            <header className="flex flex-col gap-4">
+                <h1 className="text-4xl md:text-5xl font-bold text-foreground">Media</h1>
+                <p className="text-lg text-secondary">뉴스 기사 및 언론 보도</p>
+            </header>
+
+            {/* Links Grid */}
+            <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {links.map((link) => (
+                    <LinkCard key={link.slug} link={link} />
+                ))}
+            </section>
+
+            {/* Empty State */}
+            {links.length === 0 && (
+                <div className="text-center py-12 text-secondary">
+                    아직 등록된 미디어가 없습니다.
+                </div>
+            )}
+        </main>
+    )
+}
+</file>
+
+<file path=".claude/settings.local.json">
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(git fetch:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run migrate:*)",
+      "Bash(curl:*)",
+      "Bash(npm run build:*)",
+      "Bash(dir:*)",
+      "Bash(npm info:*)"
+    ]
+  }
+}
+</file>
+
+<file path="web/package.json">
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@keystatic/core": "^0.5.48",
+    "@keystatic/next": "^5.0.4",
+    "@markdoc/markdoc": "^0.5.4",
+    "@types/jsdom": "^27.0.0",
+    "jsdom": "^27.2.0",
+    "next": "16.1.1",
+    "open-graph-scraper": "^6.11.0",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.1",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
+</file>
+
+<file path="web/src/app/insights/page.tsx">
+import { getLinks } from "@/lib/keystatic/reader"
+import { LinkCard } from "@/components/features/LinkCard"
+
+export const revalidate = 60
+
+export default async function InsightsPage() {
+    const links = await getLinks()
+
+    return (
+        <main className="py-12 px-6 md:px-12 lg:px-24 max-w-7xl mx-auto w-full">
+            <div className="flex flex-col gap-12">
+                <div className="flex flex-col gap-4 border-b border-gray-100 pb-8">
+                    <h1 className="text-4xl font-bold tracking-tight text-primary">Insights</h1>
+                    <p className="text-lg text-secondary max-w-2xl">
+                        A curated collection of articles, news, and resources that inspire.
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {links.length > 0 ? (
+                        links.map((link) => (
+                            <LinkCard key={link.slug} link={link} />
+                        ))
+                    ) : (
+                        <p className="text-secondary col-span-full py-12 text-center bg-gray-50 rounded-lg">
+                            No curated links yet.
+                        </p>
+                    )}
+                </div>
+            </div>
+        </main>
+    )
+}
+</file>
+
 <file path="web/src/components/features/BlogCard.tsx">
 import Link from 'next/link'
 import Image from 'next/image'
-import { urlFor } from '@/sanity/lib/image'
 
 interface BlogCardProps {
     post: {
         title: string
-        slug: { current: string }
-        mainImage?: any
-        publishedAt: string
-        categories?: { title: string }[]
+        slug: string
+        mainImage?: string | null
+        mainImageAlt?: string | null
+        publishedAt?: string | null
+        categories?: (string | null)[]
     }
 }
 
 export function BlogCard({ post }: BlogCardProps) {
+    const categoryLabel = post.categories?.[0] || 'Blog'
+    const dateStr = post.publishedAt
+        ? new Date(post.publishedAt).toLocaleDateString()
+        : ''
+
     return (
-        <Link href={`/blog/${post.slug.current}`} className="group flex flex-col gap-4 p-4 rounded-lg border border-border bg-white hover:shadow-lg transition-all duration-300">
+        <Link href={`/blog/${post.slug}`} className="group flex flex-col gap-4 p-4 rounded-lg border border-border bg-white hover:shadow-lg transition-all duration-300">
             <div className="relative aspect-[16/9] w-full overflow-hidden rounded-md bg-muted">
                 {post.mainImage ? (
                     <Image
-                        src={urlFor(post.mainImage).width(800).height(450).url()}
-                        alt={post.mainImage.alt || post.title}
+                        src={post.mainImage}
+                        alt={post.mainImageAlt || post.title}
                         fill
                         className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
@@ -590,511 +1662,13 @@ export function BlogCard({ post }: BlogCardProps) {
             </div>
             <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2 text-xs font-medium text-secondary uppercase tracking-wider">
-                    {post.categories?.[0]?.title || 'Blog'} • {new Date(post.publishedAt).toLocaleDateString()}
+                    {categoryLabel} {dateStr && `• ${dateStr}`}
                 </div>
                 <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2">
                     {post.title}
                 </h3>
             </div>
         </Link>
-    )
-}
-</file>
-
-<file path="web/src/sanity/components/UrlInput.tsx">
-import { Button, Stack, useToast, Box } from '@sanity/ui'
-import { useCallback, useState } from 'react'
-import { set, type ObjectInputProps } from 'sanity'
-
-export function LinkMetadataInput(props: ObjectInputProps) {
-    const { onChange, members, renderDefault } = props
-    const [isLoading, setIsLoading] = useState(false)
-    const toast = useToast()
-
-    // Find the URL member to get its value
-    const urlMember = members.find((member) => member.kind === 'field' && member.name === 'url')
-
-    // Safe access to value
-    // @ts-ignore
-    const urlValue = urlMember?.field?.value
-
-    const handleFetch = useCallback(async () => {
-        if (!urlValue) {
-            toast.push({ status: 'error', title: 'URL is missing' })
-            return
-        }
-
-        setIsLoading(true)
-        try {
-            const response = await fetch(`/api/og?url=${encodeURIComponent(urlValue)}`)
-            const data = await response.json()
-
-            if (data.error) throw new Error(data.error)
-
-            const patches = [
-                set(data.title, ['title']),
-                set(data.description, ['description']),
-            ]
-
-            onChange(patches)
-
-            toast.push({
-                status: 'success',
-                title: 'Metadata Fetched',
-                description: 'Title and Description updated.',
-            })
-        } catch (err) {
-            console.error(err)
-            toast.push({
-                status: 'error',
-                title: 'Fetch Failed',
-                description: 'Could not fetch metadata.',
-            })
-        } finally {
-            setIsLoading(false)
-        }
-    }, [urlValue, onChange, toast])
-
-    return (
-        <Stack space={3}>
-            {renderDefault({
-                ...props,
-                renderDefault: undefined
-            })}
-            <Box padding={2}>
-                <Button
-                    mode="ghost"
-                    tone="primary"
-                    onClick={handleFetch}
-                    text={isLoading ? 'Fetching Metadata...' : '✨ Auto-Fill Metadata'}
-                    disabled={isLoading || !urlValue}
-                />
-            </Box>
-        </Stack>
-    )
-}
-</file>
-
-<file path="web/src/sanity/env.ts">
-export const apiVersion =
-    process.env.NEXT_PUBLIC_SANITY_API_VERSION || '2024-11-30'
-
-export const dataset = assertValue(
-    process.env.NEXT_PUBLIC_SANITY_DATASET,
-    'Missing environment variable: NEXT_PUBLIC_SANITY_DATASET'
-)
-
-export const projectId = assertValue(
-    process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
-    'Missing environment variable: NEXT_PUBLIC_SANITY_PROJECT_ID'
-)
-
-function assertValue<T>(v: T | undefined, errorMessage: string): T {
-    if (v === undefined) {
-        throw new Error(errorMessage)
-    }
-    return v
-}
-</file>
-
-<file path="web/src/sanity/lib/client.ts">
-import { createClient } from 'next-sanity'
-
-import { apiVersion, dataset, projectId } from '../env'
-
-export const client = createClient({
-    projectId,
-    dataset,
-    apiVersion,
-    useCdn: true, // Set to false if statically generating pages, using ISR or tag-based revalidation
-})
-</file>
-
-<file path="web/src/sanity/lib/image.ts">
-import { createImageUrlBuilder } from '@sanity/image-url'
-import type { SanityImageSource } from '@sanity/image-url/lib/types/types'
-
-import { dataset, projectId } from '../env'
-
-// https://www.sanity.io/docs/image-url
-const builder = createImageUrlBuilder({ projectId, dataset })
-
-export const urlFor = (source: SanityImageSource) => {
-    return builder.image(source)
-}
-</file>
-
-<file path="web/src/sanity/schemaTypes/authorType.ts">
-import { UserIcon } from '@sanity/icons'
-import { defineField, defineType } from 'sanity'
-
-export const authorType = defineType({
-    name: 'author',
-    title: 'Author',
-    type: 'document',
-    icon: UserIcon,
-    fields: [
-        defineField({
-            name: 'name',
-            type: 'string',
-        }),
-        defineField({
-            name: 'slug',
-            type: 'slug',
-            options: {
-                source: 'name',
-            },
-        }),
-        defineField({
-            name: 'image',
-            type: 'image',
-            options: {
-                hotspot: true,
-            },
-        }),
-        defineField({
-            name: 'bio',
-            type: 'array',
-            of: [
-                {
-                    title: 'Block',
-                    type: 'block',
-                    styles: [{ title: 'Normal', value: 'normal' }],
-                    lists: [],
-                },
-            ],
-        }),
-    ],
-    preview: {
-        select: {
-            title: 'name',
-            media: 'image',
-        },
-    },
-})
-</file>
-
-<file path="web/src/sanity/schemaTypes/categoryType.ts">
-import { TagIcon } from '@sanity/icons'
-import { defineField, defineType } from 'sanity'
-
-export const categoryType = defineType({
-    name: 'category',
-    title: 'Category',
-    type: 'document',
-    icon: TagIcon,
-    fields: [
-        defineField({
-            name: 'title',
-            type: 'string',
-        }),
-        defineField({
-            name: 'slug',
-            type: 'slug',
-            options: {
-                source: 'title',
-            },
-        }),
-        defineField({
-            name: 'description',
-            type: 'text',
-        }),
-    ],
-})
-</file>
-
-<file path="web/src/sanity/schemaTypes/linkType.ts">
-import { LinkIcon } from '@sanity/icons'
-import { defineField, defineType } from 'sanity'
-
-export const linkType = defineType({
-    name: 'link',
-    title: 'Curated Link',
-    type: 'document',
-    icon: LinkIcon,
-    fields: [
-        defineField({
-            name: 'url',
-            title: 'URL',
-            type: 'url',
-            validation: (Rule) => Rule.required(),
-        }),
-        defineField({
-            name: 'title',
-            title: 'Title',
-            type: 'string',
-            description: 'Enter the title manually',
-        }),
-        defineField({
-            name: 'description',
-            title: 'Description',
-            type: 'text',
-            rows: 3,
-        }),
-        defineField({
-            name: 'image',
-            title: 'Cover Image',
-            type: 'image',
-            options: {
-                hotspot: true,
-            },
-        }),
-        defineField({
-            name: 'publishedAt',
-            title: 'Published At',
-            type: 'datetime',
-            initialValue: () => new Date().toISOString(),
-        }),
-    ],
-    preview: {
-        select: {
-            title: 'title',
-            subtitle: 'url',
-            media: 'image',
-        },
-    },
-})
-</file>
-
-<file path="web/src/sanity/schemaTypes/navigationType.ts">
-import { defineField, defineType } from 'sanity'
-import { MenuIcon } from '@sanity/icons'
-
-export const navigationType = defineType({
-  name: 'navigation',
-  title: 'Navigation',
-  type: 'document',
-  icon: MenuIcon,
-  fields: [
-    defineField({
-      name: 'title',
-      title: 'Title',
-      type: 'string',
-      initialValue: 'Main Menu',
-      readOnly: true,
-    }),
-    defineField({
-      name: 'items',
-      title: 'Menu Items',
-      type: 'array',
-      of: [
-        {
-          type: 'object',
-          fields: [
-            defineField({
-              name: 'label',
-              title: 'Label',
-              type: 'string',
-              validation: (rule) => rule.required(),
-            }),
-            defineField({
-              name: 'link',
-              title: 'Link URL',
-              type: 'string',
-              description: 'e.g. /about, /blog, or https://...',
-              validation: (rule) => rule.required(),
-            }),
-          ],
-          preview: {
-            select: {
-              title: 'label',
-              subtitle: 'link',
-            },
-          },
-        },
-      ],
-    }),
-  ],
-})
-</file>
-
-<file path="web/src/sanity/schemaTypes/postType.ts">
-import { DocumentTextIcon } from '@sanity/icons'
-import { defineArrayMember, defineField, defineType } from 'sanity'
-
-export const postType = defineType({
-    name: 'post',
-    title: 'Post',
-    type: 'document',
-    icon: DocumentTextIcon,
-    fields: [
-        defineField({
-            name: 'title',
-            type: 'string',
-        }),
-        defineField({
-            name: 'slug',
-            type: 'slug',
-            options: {
-                source: 'title',
-            },
-        }),
-        defineField({
-            name: 'author',
-            type: 'reference',
-            to: { type: 'author' },
-        }),
-        defineField({
-            name: 'mainImage',
-            type: 'image',
-            options: {
-                hotspot: true,
-            },
-            fields: [
-                defineField({
-                    name: 'alt',
-                    type: 'string',
-                    title: 'Alternative text',
-                })
-            ]
-        }),
-        defineField({
-            name: 'categories',
-            type: 'array',
-            of: [defineArrayMember({ type: 'reference', to: { type: 'category' } })],
-        }),
-        defineField({
-            name: 'publishedAt',
-            type: 'datetime',
-        }),
-        defineField({
-            name: 'body',
-            type: 'array',
-            of: [defineArrayMember({ type: 'block' })],
-        }),
-    ],
-    preview: {
-        select: {
-            title: 'title',
-            author: 'author.name',
-            media: 'mainImage',
-        },
-        prepare(selection) {
-            const { author } = selection
-            return { ...selection, subtitle: author && `by ${author}` }
-        },
-    },
-})
-</file>
-
-<file path="web/src/sanity/structure.ts">
-import type { StructureResolver } from 'sanity/structure'
-
-// https://www.sanity.io/docs/structure-builder-cheat-sheet
-export const structure: StructureResolver = (S) =>
-    S.list()
-        .title('Content')
-        .items(S.documentTypeListItems())
-</file>
-
-<file path="web/src/app/about/page.tsx">
-import { client } from '@/sanity/lib/client'
-import { defineQuery } from 'next-sanity'
-import { PortableText } from 'next-sanity'
-import Image from 'next/image'
-import { urlFor } from '@/sanity/lib/image'
-
-const ABOUT_PAGE_QUERY = defineQuery(`*[_type == "post" && slug.current == "about"][0] {
-  _id,
-  title,
-  body,
-  mainImage
-}`)
-
-export const revalidate = 60
-
-// Portable Text components for proper styling
-const portableTextComponents = {
-    block: {
-        h1: ({ children }: any) => (
-            <h1 className="text-3xl md:text-4xl font-bold mt-12 mb-6 text-primary">{children}</h1>
-        ),
-        h2: ({ children }: any) => (
-            <h2 className="text-2xl md:text-3xl font-bold mt-10 mb-4 text-primary">{children}</h2>
-        ),
-        h3: ({ children }: any) => (
-            <h3 className="text-xl md:text-2xl font-semibold mt-8 mb-3 text-primary">{children}</h3>
-        ),
-        h4: ({ children }: any) => (
-            <h4 className="text-lg md:text-xl font-semibold mt-6 mb-2 text-primary">{children}</h4>
-        ),
-        normal: ({ children }: any) => (
-            <p className="mb-5 leading-relaxed text-foreground whitespace-pre-wrap">{children}</p>
-        ),
-    },
-    marks: {
-        strong: ({ children }: any) => <strong className="font-bold text-primary">{children}</strong>,
-        em: ({ children }: any) => <em className="italic">{children}</em>,
-        link: ({ value, children }: any) => (
-            <a
-                href={value?.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent hover:underline"
-            >
-                {children}
-            </a>
-        ),
-    },
-    list: {
-        bullet: ({ children }: any) => (
-            <ul className="list-disc list-inside mb-5 space-y-1 text-foreground">{children}</ul>
-        ),
-        number: ({ children }: any) => (
-            <ol className="list-decimal list-inside mb-5 space-y-1 text-foreground">{children}</ol>
-        ),
-    },
-    listItem: {
-        bullet: ({ children }: any) => (
-            <li className="mb-1">{children}</li>
-        ),
-        number: ({ children }: any) => (
-            <li className="mb-1">{children}</li>
-        ),
-    },
-}
-
-export default async function AboutPage() {
-    const page = await client.fetch(ABOUT_PAGE_QUERY)
-
-    if (!page) {
-        return (
-            <div className="py-24 px-6 md:px-12 lg:px-24 max-w-4xl mx-auto">
-                <h1 className="text-4xl font-bold mb-8">About</h1>
-                <p className="text-lg text-secondary">페이지를 불러올 수 없습니다.</p>
-            </div>
-        )
-    }
-
-    return (
-        <article className="py-12 px-6 md:px-12 lg:px-24 max-w-4xl mx-auto w-full flex flex-col gap-8">
-            {/* Header */}
-            <header className="flex flex-col gap-6 items-center">
-                <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-primary leading-tight">
-                    {page.title}
-                </h1>
-            </header>
-
-            {/* Main Image */}
-            {page.mainImage && (
-                <div className="relative w-full aspect-[16/9] rounded-sm overflow-hidden">
-                    <Image
-                        src={urlFor(page.mainImage).width(1200).height(675).url()}
-                        alt={page.mainImage.alt || page.title}
-                        fill
-                        className="object-cover"
-                        priority
-                    />
-                </div>
-            )}
-
-            {/* Content */}
-            {page.body && (
-                <div className="flex flex-col max-w-none">
-                    <PortableText value={page.body} components={portableTextComponents} />
-                </div>
-            )}
-        </article>
     )
 }
 </file>
@@ -1246,31 +1820,55 @@ async function migrate() {
 migrate().catch(console.error)
 </file>
 
-<file path="web/src/app/blog/page.tsx">
-import { client } from "@/sanity/lib/client";
-import { POSTS_QUERY, CATEGORIES_QUERY } from "@/sanity/lib/queries";
-import { PostList } from "@/components/features/PostList";
+<file path="web/src/app/about/page.tsx">
+import { getPost } from '@/lib/keystatic/reader'
+import Image from 'next/image'
+import { MarkdocRenderer } from '@/components/features/MarkdocRenderer'
 
-export const revalidate = 60;
+export const revalidate = 60
 
-export default async function BlogPage() {
-    const posts = await client.fetch(POSTS_QUERY);
-    const categories = await client.fetch(CATEGORIES_QUERY);
+export default async function AboutPage() {
+    const page = await getPost('about')
+
+    if (!page) {
+        return (
+            <div className="py-24 px-6 md:px-12 lg:px-24 max-w-4xl mx-auto">
+                <h1 className="text-4xl font-bold mb-8">About</h1>
+                <p className="text-lg text-secondary">페이지를 불러올 수 없습니다.</p>
+            </div>
+        )
+    }
 
     return (
-        <main className="py-12 px-6 md:px-12 lg:px-24 max-w-7xl mx-auto w-full">
-            <div className="flex flex-col gap-12">
-                <div className="flex flex-col gap-4 border-b border-gray-100 pb-8">
-                    <h1 className="text-4xl font-bold tracking-tight text-gray-900">Blog</h1>
-                    <p className="text-lg text-gray-500 max-w-2xl">
-                        Thoughts on technology, leadership, and building products that matter.
-                    </p>
-                </div>
+        <article className="py-12 px-6 md:px-12 lg:px-24 max-w-4xl mx-auto w-full flex flex-col gap-8">
+            {/* Header */}
+            <header className="flex flex-col gap-6 items-center">
+                <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-primary leading-tight">
+                    {page.title}
+                </h1>
+            </header>
 
-                <PostList posts={posts} categories={categories} />
-            </div>
-        </main>
-    );
+            {/* Main Image */}
+            {page.mainImage && (
+                <div className="relative w-full aspect-[16/9] rounded-sm overflow-hidden">
+                    <Image
+                        src={page.mainImage}
+                        alt={page.mainImageAlt || page.title}
+                        fill
+                        className="object-cover"
+                        priority
+                    />
+                </div>
+            )}
+
+            {/* Content */}
+            {page.body && (
+                <div className="flex flex-col max-w-none">
+                    <MarkdocRenderer content={page.body} />
+                </div>
+            )}
+        </article>
+    )
 }
 </file>
 
@@ -1310,20 +1908,46 @@ body {
 }
 </file>
 
+<file path="web/src/app/blog/page.tsx">
+import { getPosts, getCategories } from "@/lib/keystatic/reader"
+import { PostList } from "@/components/features/PostList"
+
+export const revalidate = 60
+
+export default async function BlogPage() {
+    const posts = await getPosts()
+    const categories = await getCategories()
+
+    return (
+        <main className="py-12 px-6 md:px-12 lg:px-24 max-w-7xl mx-auto w-full">
+            <div className="flex flex-col gap-12">
+                <div className="flex flex-col gap-4 border-b border-gray-100 pb-8">
+                    <h1 className="text-4xl font-bold tracking-tight text-gray-900">Blog</h1>
+                    <p className="text-lg text-gray-500 max-w-2xl">
+                        Thoughts on technology, leadership, and building products that matter.
+                    </p>
+                </div>
+
+                <PostList posts={posts} categories={categories} />
+            </div>
+        </main>
+    )
+}
+</file>
+
 <file path="web/src/components/features/LinkCard.tsx">
 "use client"
 
 import Image from 'next/image'
-import { urlFor } from '@/sanity/lib/image'
 import { useState, useEffect } from 'react'
 
 interface LinkCardProps {
     link: {
         url: string
         title: string
-        description?: string
-        image?: any
-        publishedAt: string
+        description?: string | null
+        image?: string | null
+        publishedAt?: string | null
     }
 }
 
@@ -1331,13 +1955,13 @@ export function LinkCard({ link }: LinkCardProps) {
     const [ogImage, setOgImage] = useState<string | null>(null)
     const [loading, setLoading] = useState(!link.image)
 
-    // Sanity 이미지가 있으면 그걸 우선 사용
-    const sanityImage = link.image ? urlFor(link.image).width(800).height(450).url() : null
-    const displayImage = sanityImage || ogImage
+    // 로컬 이미지가 있으면 그걸 우선 사용
+    const localImage = link.image || null
+    const displayImage = localImage || ogImage
 
     useEffect(() => {
         // 이미지가 없고 URL이 있을 때만 스크래핑 시도
-        if (!sanityImage && link.url) {
+        if (!localImage && link.url) {
             setLoading(true)
             fetch(`/api/og?url=${encodeURIComponent(link.url)}`)
                 .then(res => res.json())
@@ -1351,7 +1975,7 @@ export function LinkCard({ link }: LinkCardProps) {
         } else {
             setLoading(false)
         }
-    }, [sanityImage, link.url])
+    }, [localImage, link.url])
 
     return (
         <a
@@ -1367,7 +1991,7 @@ export function LinkCard({ link }: LinkCardProps) {
                         alt={link.title}
                         fill
                         className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        unoptimized={!sanityImage} // 외부 이미지는 최적화 제외 (도메인 설정 회피)
+                        unoptimized={!localImage} // 외부 이미지는 최적화 제외 (도메인 설정 회피)
                     />
                 ) : (
                     <div className="flex h-full items-center justify-center text-gray-400 bg-gray-50 text-sm">
@@ -1377,7 +2001,7 @@ export function LinkCard({ link }: LinkCardProps) {
             </div>
             <div className="flex flex-col gap-2 flex-1">
                 <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {new Date(link.publishedAt).toLocaleDateString()}
+                    {link.publishedAt ? new Date(link.publishedAt).toLocaleDateString() : ''}
                 </span>
                 <h3 className="text-lg font-bold text-gray-900 group-hover:text-gray-700 transition-colors line-clamp-2">
                     {link.title}
@@ -1395,23 +2019,18 @@ export function LinkCard({ link }: LinkCardProps) {
 
 <file path="web/src/components/layout/Header.tsx">
 import Link from 'next/link'
-import { client } from '@/sanity/lib/client'
-import { NAVIGATION_QUERY } from '@/sanity/lib/queries'
+import { getNavigation } from '@/lib/keystatic/reader'
 
 export async function Header() {
-    const navData = await client.fetch(NAVIGATION_QUERY)
-    const menuItems = navData?.items || [
-        { label: 'About', link: '/about' },
-        { label: 'Blog', link: '/blog' },
-        { label: 'Media', link: '/media' },
-    ]
+    const navData = await getNavigation()
+    const menuItems = navData.items
 
     return (
         <header className="w-full py-4 px-6 md:px-12 lg:px-24 flex justify-between items-center bg-white border-b border-gray-100 sticky top-0 z-50 backdrop-blur-sm bg-white/95">
 
             {/* 로고: md 크기 기준으로 텍스트 분리 및 제어 */}
             <Link href="/" className="text-xl font-bold tracking-tight text-gray-900 hover:opacity-80 transition-opacity">
-                
+
                 {/* 1. 모바일 (기본값) 및 md 사이즈 미만에서만 보이는 텍스트 */}
                 <span className="md:hidden">
                     IMPACT FOUNDER
@@ -1419,17 +2038,17 @@ export async function Header() {
 
                 {/* 2. 데스크톱 (md 사이즈 이상)에서만 보이는 텍스트 */}
                 <span className="hidden md:inline">
-                    IMPACT FOUNDER&nbsp;&nbsp;|&nbsp;&nbsp;Jung Jaewook 
+                    IMPACT FOUNDER&nbsp;&nbsp;|&nbsp;&nbsp;Jung Jaewook
                 </span>
-                
+
             </Link>
 
             {/* PC 메뉴 */}
             <nav className="hidden md:flex gap-8">
-                {menuItems.map((item: any, idx: number) => (
-                    <Link 
-                        key={idx} 
-                        href={item.link} 
+                {menuItems.map((item, idx) => (
+                    <Link
+                        key={idx}
+                        href={item.link}
                         className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
                     >
                         {item.label}
@@ -1449,116 +2068,60 @@ export async function Header() {
 }
 </file>
 
-<file path="web/src/sanity/schemaTypes/index.ts">
-import { type SchemaTypeDefinition } from 'sanity'
-import { postType } from './postType'
-import { categoryType } from './categoryType'
-import { authorType } from './authorType'
-import { linkType } from './linkType'
-import { navigationType } from './navigationType'
-
-export const schema: { types: SchemaTypeDefinition[] } = {
-  types: [postType, categoryType, authorType, linkType, navigationType],
-}
-</file>
-
 <file path="web/src/app/blog/[slug]/page.tsx">
-import { client } from "@/sanity/lib/client";
-import { POST_QUERY } from "@/sanity/lib/queries";
-import { urlFor } from "@/sanity/lib/image";
-import Image from "next/image";
-import { PortableText } from "next-sanity";
-import { notFound } from "next/navigation";
+import { getPost, getAuthor, getCategoryTitle } from "@/lib/keystatic/reader"
+import Image from "next/image"
+import { notFound } from "next/navigation"
+import { MarkdocRenderer } from "@/components/features/MarkdocRenderer"
 
-export const revalidate = 60;
+export const revalidate = 60
 
 interface PageProps {
-    params: Promise<{ slug: string }>;
-}
-
-// Portable Text components for proper styling
-const portableTextComponents = {
-    block: {
-        h1: ({ children }: any) => (
-            <h1 className="text-3xl md:text-4xl font-bold mt-16 mb-6 text-gray-900 leading-tight">{children}</h1>
-        ),
-        h2: ({ children }: any) => (
-            <h2 className="text-2xl md:text-3xl font-bold mt-14 mb-5 text-gray-900 leading-tight">{children}</h2>
-        ),
-        h3: ({ children }: any) => (
-            <h3 className="text-xl md:text-2xl font-bold mt-10 mb-4 text-gray-900 leading-tight">{children}</h3>
-        ),
-        h4: ({ children }: any) => (
-            <h4 className="text-lg md:text-xl font-bold mt-8 mb-3 text-gray-900 leading-tight">{children}</h4>
-        ),
-        normal: ({ children }: any) => (
-            <p className="mb-7 leading-8 text-lg text-gray-800 whitespace-pre-wrap break-keep">{children}</p>
-        ),
-    },
-    marks: {
-        strong: ({ children }: any) => <strong className="font-bold text-primary">{children}</strong>,
-        em: ({ children }: any) => <em className="italic">{children}</em>,
-        link: ({ value, children }: any) => (
-            <a
-                href={value?.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent hover:underline"
-            >
-                {children}
-            </a>
-        ),
-    },
-    list: {
-        bullet: ({ children }: any) => (
-            <ul className="list-disc list-inside mb-5 space-y-1 text-foreground">{children}</ul>
-        ),
-        number: ({ children }: any) => (
-            <ol className="list-decimal list-inside mb-5 space-y-1 text-foreground">{children}</ol>
-        ),
-    },
-    listItem: {
-        bullet: ({ children }: any) => (
-            <li className="mb-1">{children}</li>
-        ),
-        number: ({ children }: any) => (
-            <li className="mb-1">{children}</li>
-        ),
-    },
+    params: Promise<{ slug: string }>
 }
 
 export default async function BlogPostPage({ params }: PageProps) {
-    const { slug } = await params;
-    const post = await client.fetch(POST_QUERY, { slug });
+    const { slug } = await params
+    const post = await getPost(slug)
 
     if (!post) {
-        notFound();
+        notFound()
     }
+
+    // Get author details if available
+    const author = post.author ? await getAuthor(post.author) : null
+
+    // Get category titles
+    const categoryTitles = await Promise.all(
+        (post.categories || [])
+            .filter((c): c is string => c !== null)
+            .map(slug => getCategoryTitle(slug))
+    )
 
     return (
         <article className="py-20 px-6 max-w-3xl mx-auto w-full flex flex-col gap-10">
             {/* Header */}
             <header className="flex flex-col gap-6 items-start text-left">
                 <div className="flex items-center gap-2 text-sm font-medium text-gray-500 uppercase tracking-wider">
-                    {post.categories?.[0]?.title || 'Blog'} • {new Date(post.publishedAt).toLocaleDateString()}
+                    {categoryTitles[0] || 'Blog'} • {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : ''}
                 </div>
                 <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-gray-900 leading-tight">
                     {post.title}
                 </h1>
-                {post.author && (
+                {author && (
                     <div className="flex items-center gap-3 mt-2">
-                        {post.author.image && (
+                        {author.image && (
                             <div className="relative w-10 h-10 rounded-full overflow-hidden bg-gray-100">
                                 <Image
-                                    src={urlFor(post.author.image).width(100).height(100).url()}
-                                    alt={post.author.name}
+                                    src={author.image}
+                                    alt={author.name}
                                     fill
                                     className="object-cover"
                                 />
                             </div>
                         )}
                         <div className="text-left">
-                            <p className="text-sm font-semibold text-primary">{post.author.name}</p>
+                            <p className="text-sm font-semibold text-primary">{author.name}</p>
                         </div>
                     </div>
                 )}
@@ -1568,8 +2131,8 @@ export default async function BlogPostPage({ params }: PageProps) {
             {post.mainImage && (
                 <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg bg-gray-100 my-4">
                     <Image
-                        src={urlFor(post.mainImage).width(1200).height(675).url()}
-                        alt={post.mainImage.alt || post.title}
+                        src={post.mainImage}
+                        alt={post.mainImageAlt || post.title}
                         fill
                         className="object-cover"
                         priority
@@ -1579,10 +2142,10 @@ export default async function BlogPostPage({ params }: PageProps) {
 
             {/* Content */}
             <div className="flex flex-col max-w-none">
-                {post.body ? <PortableText value={post.body} components={portableTextComponents} /> : <p className="text-gray-500 italic">No content...</p>}
+                <MarkdocRenderer content={post.body} />
             </div>
         </article>
-    );
+    )
 }
 </file>
 
@@ -1593,24 +2156,17 @@ import { useState } from "react"
 import { BlogCard } from "./BlogCard"
 
 interface Category {
-    _id: string
+    slug: string
     title: string
-    slug: {
-        current: string
-    }
 }
 
 interface Post {
-    _id: string
+    slug: string
     title: string
-    slug: {
-        current: string
-    }
-    publishedAt: string
-    mainImage: any
-    categories: {
-        title: string
-    }[]
+    publishedAt: string | null
+    mainImage: string | null
+    mainImageAlt: string | null
+    categories: (string | null)[]
 }
 
 interface PostListProps {
@@ -1624,7 +2180,7 @@ export function PostList({ posts, categories = [] }: PostListProps) {
     const filteredPosts = selectedCategory === "all"
         ? posts
         : posts.filter(post =>
-            post.categories?.some(cat => cat.title === selectedCategory)
+            post.categories?.some(cat => cat === selectedCategory)
         )
 
     return (
@@ -1636,8 +2192,8 @@ export function PostList({ posts, categories = [] }: PostListProps) {
                         onClick={() => setSelectedCategory("all")}
                         className={`
                             px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap border
-                            ${selectedCategory === "all" 
-                                ? "bg-gray-900 text-white border-gray-900 shadow-sm" 
+                            ${selectedCategory === "all"
+                                ? "bg-gray-900 text-white border-gray-900 shadow-sm"
                                 : "bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-900 hover:bg-gray-50"}
                         `}
                     >
@@ -1645,12 +2201,12 @@ export function PostList({ posts, categories = [] }: PostListProps) {
                     </button>
                     {categories.map(cat => (
                         <button
-                            key={cat._id}
-                            onClick={() => setSelectedCategory(cat.title)}
+                            key={cat.slug}
+                            onClick={() => setSelectedCategory(cat.slug)}
                             className={`
                                 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap border
-                                ${selectedCategory === cat.title 
-                                    ? "bg-gray-900 text-white border-gray-900 shadow-sm" 
+                                ${selectedCategory === cat.slug
+                                    ? "bg-gray-900 text-white border-gray-900 shadow-sm"
                                     : "bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-900 hover:bg-gray-50"}
                             `}
                         >
@@ -1664,7 +2220,7 @@ export function PostList({ posts, categories = [] }: PostListProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 min-h-[200px]">
                 {filteredPosts.length > 0 ? (
                     filteredPosts.map((post) => (
-                        <BlogCard key={post._id} post={post} />
+                        <BlogCard key={post.slug} post={post} />
                     ))
                 ) : (
                     <div className="col-span-full flex items-center justify-center text-gray-500 py-12">
@@ -1678,8 +2234,7 @@ export function PostList({ posts, categories = [] }: PostListProps) {
 </file>
 
 <file path="web/src/app/page.tsx">
-import { client } from '@/sanity/lib/client'
-import { LATEST_POSTS_QUERY, LATEST_LINKS_QUERY } from '@/sanity/lib/queries'
+import { getLatestPosts, getLatestLinks } from '@/lib/keystatic/reader'
 import { PostList } from '@/components/features/PostList'
 import { LinkCard } from '@/components/features/LinkCard'
 import Link from 'next/link'
@@ -1687,8 +2242,8 @@ import Link from 'next/link'
 export const revalidate = 60
 
 export default async function Home() {
-    const posts = await client.fetch(LATEST_POSTS_QUERY)
-    const links = await client.fetch(LATEST_LINKS_QUERY)
+    const posts = await getLatestPosts(6)
+    const links = await getLatestLinks(6)
 
     return (
         <main className="flex flex-col gap-24 py-12 px-6 md:px-12 lg:px-24 max-w-7xl mx-auto">
@@ -1706,80 +2261,14 @@ export default async function Home() {
                     </Link>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {links.map((link: any) => (
-                        <LinkCard key={link._id} link={link} />
+                    {links.map((link) => (
+                        <LinkCard key={link.slug} link={link} />
                     ))}
                 </div>
             </section>
         </main>
     )
 }
-</file>
-
-<file path="web/src/sanity/lib/queries.ts">
-import { defineQuery } from "next-sanity";
-
-// Get all posts (excluding About page)
-export const POSTS_QUERY = defineQuery(`*[_type == "post" && defined(slug.current) && slug.current != "about"] | order(publishedAt desc) {
-  _id,
-  title,
-  slug,
-  publishedAt,
-  mainImage,
-  categories[]->{title}
-}`);
-
-// Get latest 3 posts (excluding About page)
-export const LATEST_POSTS_QUERY = defineQuery(`*[_type == "post" && defined(slug.current) && slug.current != "about"] | order(publishedAt desc)[0...6] {
-  _id,
-  title,
-  slug,
-  publishedAt,
-  mainImage,
-  categories[]->{title}
-}`);
-
-export const POST_QUERY = defineQuery(`*[_type == "post" && slug.current == $slug][0] {
-  _id,
-  title,
-  slug,
-  publishedAt,
-  mainImage,
-  body,
-  author->{name, image, bio},
-  categories[]->{title}
-}`);
-
-export const LINKS_QUERY = defineQuery(`*[_type == "link"] | order(publishedAt desc) {
-  _id,
-  url,
-  title,
-  description,
-  image,
-  publishedAt
-}`);
-
-export const LATEST_LINKS_QUERY = defineQuery(`*[_type == "link"] | order(publishedAt desc)[0...6] {
-  _id,
-  url,
-  title,
-  description,
-  image,
-  publishedAt
-}`);
-
-export const CATEGORIES_QUERY = defineQuery(`*[_type == "category"] | order(title asc) {
-  _id,
-  title,
-  slug
-}`);
-
-export const NAVIGATION_QUERY = defineQuery(`*[_type == "navigation"][0] {
-  items[] {
-    label,
-    link
-  }
-}`);
 </file>
 
 </files>
