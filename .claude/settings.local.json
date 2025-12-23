@@ -7,7 +7,8 @@
       "Bash(npm run migrate:*)",
       "Bash(curl:*)",
       "Bash(npm run build:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(npm info:*)"
     ]
   }
 }
