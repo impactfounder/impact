@@ -4,24 +4,17 @@ import { useState } from "react"
 import { BlogCard } from "./BlogCard"
 
 interface Category {
-    _id: string
+    slug: string
     title: string
-    slug: {
-        current: string
-    }
 }
 
 interface Post {
-    _id: string
+    slug: string
     title: string
-    slug: {
-        current: string
-    }
-    publishedAt: string
-    mainImage: any
-    categories: {
-        title: string
-    }[]
+    publishedAt: string | null
+    mainImage: string | null
+    mainImageAlt: string | null
+    categories: (string | null)[]
 }
 
 interface PostListProps {
@@ -35,7 +28,7 @@ export function PostList({ posts, categories = [] }: PostListProps) {
     const filteredPosts = selectedCategory === "all"
         ? posts
         : posts.filter(post =>
-            post.categories?.some(cat => cat.title === selectedCategory)
+            post.categories?.some(cat => cat === selectedCategory)
         )
 
     return (
@@ -47,8 +40,8 @@ export function PostList({ posts, categories = [] }: PostListProps) {
                         onClick={() => setSelectedCategory("all")}
                         className={`
                             px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap border
-                            ${selectedCategory === "all" 
-                                ? "bg-gray-900 text-white border-gray-900 shadow-sm" 
+                            ${selectedCategory === "all"
+                                ? "bg-gray-900 text-white border-gray-900 shadow-sm"
                                 : "bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-900 hover:bg-gray-50"}
                         `}
                     >
@@ -56,12 +49,12 @@ export function PostList({ posts, categories = [] }: PostListProps) {
                     </button>
                     {categories.map(cat => (
                         <button
-                            key={cat._id}
-                            onClick={() => setSelectedCategory(cat.title)}
+                            key={cat.slug}
+                            onClick={() => setSelectedCategory(cat.slug)}
                             className={`
                                 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap border
-                                ${selectedCategory === cat.title 
-                                    ? "bg-gray-900 text-white border-gray-900 shadow-sm" 
+                                ${selectedCategory === cat.slug
+                                    ? "bg-gray-900 text-white border-gray-900 shadow-sm"
                                     : "bg-white text-gray-500 border-gray-200 hover:border-gray-300 hover:text-gray-900 hover:bg-gray-50"}
                             `}
                         >
@@ -75,7 +68,7 @@ export function PostList({ posts, categories = [] }: PostListProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 min-h-[200px]">
                 {filteredPosts.length > 0 ? (
                     filteredPosts.map((post) => (
-                        <BlogCard key={post._id} post={post} />
+                        <BlogCard key={post.slug} post={post} />
                     ))
                 ) : (
                     <div className="col-span-full flex items-center justify-center text-gray-500 py-12">

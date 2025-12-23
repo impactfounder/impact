@@ -1,12 +1,11 @@
-import { client } from "@/sanity/lib/client";
-import { POSTS_QUERY, CATEGORIES_QUERY } from "@/sanity/lib/queries";
-import { PostList } from "@/components/features/PostList";
+import { getPosts, getCategories } from "@/lib/keystatic/reader"
+import { PostList } from "@/components/features/PostList"
 
-export const revalidate = 60;
+export const revalidate = 60
 
 export default async function BlogPage() {
-    const posts = await client.fetch(POSTS_QUERY);
-    const categories = await client.fetch(CATEGORIES_QUERY);
+    const posts = await getPosts()
+    const categories = await getCategories()
 
     return (
         <main className="py-12 px-6 md:px-12 lg:px-24 max-w-7xl mx-auto w-full">
@@ -21,5 +20,5 @@ export default async function BlogPage() {
                 <PostList posts={posts} categories={categories} />
             </div>
         </main>
-    );
+    )
 }

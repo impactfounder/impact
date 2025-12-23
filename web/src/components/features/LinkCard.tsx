@@ -1,16 +1,15 @@
 "use client"
 
 import Image from 'next/image'
-import { urlFor } from '@/sanity/lib/image'
 import { useState, useEffect } from 'react'
 
 interface LinkCardProps {
     link: {
         url: string
         title: string
-        description?: string
-        image?: any
-        publishedAt: string
+        description?: string | null
+        image?: string | null
+        publishedAt?: string | null
     }
 }
 
@@ -18,13 +17,13 @@ export function LinkCard({ link }: LinkCardProps) {
     const [ogImage, setOgImage] = useState<string | null>(null)
     const [loading, setLoading] = useState(!link.image)
 
-    // Sanity 이미지가 있으면 그걸 우선 사용
-    const sanityImage = link.image ? urlFor(link.image).width(800).height(450).url() : null
-    const displayImage = sanityImage || ogImage
+    // 로컬 이미지가 있으면 그걸 우선 사용
+    const localImage = link.image || null
+    const displayImage = localImage || ogImage
 
     useEffect(() => {
         // 이미지가 없고 URL이 있을 때만 스크래핑 시도
-        if (!sanityImage && link.url) {
+        if (!localImage && link.url) {
             setLoading(true)
             fetch(`/api/og?url=${encodeURIComponent(link.url)}`)
                 .then(res => res.json())
@@ -38,7 +37,7 @@ export function LinkCard({ link }: LinkCardProps) {
         } else {
             setLoading(false)
         }
-    }, [sanityImage, link.url])
+    }, [localImage, link.url])
 
     return (
         <a
@@ -54,7 +53,7 @@ export function LinkCard({ link }: LinkCardProps) {
                         alt={link.title}
                         fill
                         className="object-cover transition-transform duration-500 group-hover:scale-105"
-                        unoptimized={!sanityImage} // 외부 이미지는 최적화 제외 (도메인 설정 회피)
+                        unoptimized={!localImage} // 외부 이미지는 최적화 제외 (도메인 설정 회피)
                     />
                 ) : (
                     <div className="flex h-full items-center justify-center text-gray-400 bg-gray-50 text-sm">
@@ -64,7 +63,7 @@ export function LinkCard({ link }: LinkCardProps) {
             </div>
             <div className="flex flex-col gap-2 flex-1">
                 <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {new Date(link.publishedAt).toLocaleDateString()}
+                    {link.publishedAt ? new Date(link.publishedAt).toLocaleDateString() : ''}
                 </span>
                 <h3 className="text-lg font-bold text-gray-900 group-hover:text-gray-700 transition-colors line-clamp-2">
                     {link.title}

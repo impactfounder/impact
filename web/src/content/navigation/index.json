@@ -1,0 +1,17 @@
+{
+  "title": "Main Menu",
+  "items": [
+    {
+      "label": "About",
+      "link": "/about"
+    },
+    {
+      "label": "Blog",
+      "link": "/blog"
+    },
+    {
+      "label": "Media",
+      "link": "/media"
+    }
+  ]
+}

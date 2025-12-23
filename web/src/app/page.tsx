@@ -1,5 +1,4 @@
-import { client } from '@/sanity/lib/client'
-import { LATEST_POSTS_QUERY, LATEST_LINKS_QUERY } from '@/sanity/lib/queries'
+import { getLatestPosts, getLatestLinks } from '@/lib/keystatic/reader'
 import { PostList } from '@/components/features/PostList'
 import { LinkCard } from '@/components/features/LinkCard'
 import Link from 'next/link'
@@ -7,8 +6,8 @@ import Link from 'next/link'
 export const revalidate = 60
 
 export default async function Home() {
-    const posts = await client.fetch(LATEST_POSTS_QUERY)
-    const links = await client.fetch(LATEST_LINKS_QUERY)
+    const posts = await getLatestPosts(6)
+    const links = await getLatestLinks(6)
 
     return (
         <main className="flex flex-col gap-24 py-12 px-6 md:px-12 lg:px-24 max-w-7xl mx-auto">
@@ -26,8 +25,8 @@ export default async function Home() {
                     </Link>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {links.map((link: any) => (
-                        <LinkCard key={link._id} link={link} />
+                    {links.map((link) => (
+                        <LinkCard key={link.slug} link={link} />
                     ))}
                 </div>
             </section>

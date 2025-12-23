@@ -1,0 +1,139 @@
+import { config, fields, collection, singleton } from '@keystatic/core'
+
+export default config({
+  storage: {
+    kind: 'local',
+  },
+  collections: {
+    posts: collection({
+      label: 'Posts',
+      slugField: 'title',
+      path: 'src/content/posts/*',
+      format: { contentField: 'body' },
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        author: fields.relationship({
+          label: 'Author',
+          collection: 'authors',
+        }),
+        mainImage: fields.image({
+          label: 'Main Image',
+          directory: 'public/images/posts',
+          publicPath: '/images/posts',
+        }),
+        mainImageAlt: fields.text({
+          label: 'Main Image Alt Text',
+        }),
+        categories: fields.array(
+          fields.relationship({
+            label: 'Category',
+            collection: 'categories',
+          }),
+          {
+            label: 'Categories',
+            itemLabel: (props) => props.value || 'Select a category',
+          }
+        ),
+        publishedAt: fields.datetime({
+          label: 'Published At',
+        }),
+        body: fields.markdoc({
+          label: 'Body',
+          options: {
+            image: {
+              directory: 'public/images/posts',
+              publicPath: '/images/posts',
+            },
+          },
+        }),
+      },
+    }),
+    links: collection({
+      label: 'Curated Links',
+      slugField: 'title',
+      path: 'src/content/links/*',
+      format: { data: 'json' },
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        url: fields.url({
+          label: 'URL',
+          validation: { isRequired: true },
+        }),
+        description: fields.text({
+          label: 'Description',
+          multiline: true,
+        }),
+        image: fields.image({
+          label: 'Cover Image',
+          directory: 'public/images/links',
+          publicPath: '/images/links',
+        }),
+        publishedAt: fields.datetime({
+          label: 'Published At',
+          defaultValue: { kind: 'now' },
+        }),
+      },
+    }),
+    categories: collection({
+      label: 'Categories',
+      slugField: 'title',
+      path: 'src/content/categories/*',
+      format: { data: 'json' },
+      schema: {
+        title: fields.slug({ name: { label: 'Title' } }),
+        description: fields.text({
+          label: 'Description',
+          multiline: true,
+        }),
+      },
+    }),
+    authors: collection({
+      label: 'Authors',
+      slugField: 'name',
+      path: 'src/content/authors/*',
+      format: { data: 'json' },
+      schema: {
+        name: fields.slug({ name: { label: 'Name' } }),
+        image: fields.image({
+          label: 'Profile Image',
+          directory: 'public/images/authors',
+          publicPath: '/images/authors',
+        }),
+        bio: fields.text({
+          label: 'Bio',
+          multiline: true,
+        }),
+      },
+    }),
+  },
+  singletons: {
+    navigation: singleton({
+      label: 'Navigation',
+      path: 'src/content/navigation',
+      format: { data: 'json' },
+      schema: {
+        title: fields.text({
+          label: 'Title',
+          defaultValue: 'Main Menu',
+        }),
+        items: fields.array(
+          fields.object({
+            label: fields.text({
+              label: 'Label',
+              validation: { isRequired: true },
+            }),
+            link: fields.text({
+              label: 'Link URL',
+              description: 'e.g. /about, /blog, or https://...',
+              validation: { isRequired: true },
+            }),
+          }),
+          {
+            label: 'Menu Items',
+            itemLabel: (props) => props.fields.label.value || 'Menu Item',
+          }
+        ),
+      },
+    }),
+  },
+})

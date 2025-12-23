@@ -1,11 +1,10 @@
-import { client } from "@/sanity/lib/client";
-import { LINKS_QUERY } from "@/sanity/lib/queries";
-import { LinkCard } from "@/components/features/LinkCard";
+import { getLinks } from "@/lib/keystatic/reader"
+import { LinkCard } from "@/components/features/LinkCard"
 
-export const revalidate = 60;
+export const revalidate = 60
 
 export default async function InsightsPage() {
-    const links = await client.fetch(LINKS_QUERY);
+    const links = await getLinks()
 
     return (
         <main className="py-12 px-6 md:px-12 lg:px-24 max-w-7xl mx-auto w-full">
@@ -19,8 +18,8 @@ export default async function InsightsPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {links.length > 0 ? (
-                        links.map((link: any) => (
-                            <LinkCard key={link._id} link={link} />
+                        links.map((link) => (
+                            <LinkCard key={link.slug} link={link} />
                         ))
                     ) : (
                         <p className="text-secondary col-span-full py-12 text-center bg-gray-50 rounded-lg">
@@ -30,5 +29,5 @@ export default async function InsightsPage() {
                 </div>
             </div>
         </main>
-    );
+    )
 }
