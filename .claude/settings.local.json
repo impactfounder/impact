@@ -9,7 +9,9 @@
       "Bash(npm run build:*)",
       "Bash(dir:*)",
       "Bash(npm info:*)",
-      "Bash(npm run migrate:sanity:*)"
+      "Bash(npm run migrate:sanity:*)",
+      "Bash(node -e:*)",
+      "Bash(npx tsx:*)"
     ]
   }
 }

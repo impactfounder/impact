@@ -355,9 +355,9 @@ async function migratePosts() {
       .map((cat: any) => (cat?._id ? categoryMap[cat._id] : null))
       .filter(Boolean)
 
-    // Build frontmatter
-    // Note: Keystatic expects specific YAML format
+    // Build frontmatter as JSON (Keystatic uses JSON-in-YAML format)
     const frontmatter: Record<string, any> = {
+      // Keystatic slug field requires name property
       title: post.title || '',
     }
 
@@ -366,7 +366,7 @@ async function migratePosts() {
     }
 
     if (mainImagePath) {
-      frontmatter.mainImage = `/images/posts/${mainImagePath}`
+      frontmatter.mainImage = mainImagePath
     }
 
     if (mainImageAlt) {
@@ -381,23 +381,29 @@ async function migratePosts() {
       frontmatter.publishedAt = post.publishedAt
     }
 
-    // Create .mdoc file with YAML frontmatter
-    const yamlLines = Object.entries(frontmatter).map(([key, value]) => {
-      if (Array.isArray(value)) {
-        return `${key}:\n${value.map((v) => `  - ${v}`).join('\n')}`
-      } else if (typeof value === 'string') {
-        // Escape quotes in strings
-        const escaped = value.replace(/"/g, '\\"')
-        return `${key}: "${escaped}"`
-      } else if (value === null) {
-        return `${key}: null`
-      } else {
+    // Create frontmatter YAML - Keystatic uses simple YAML format
+    const yamlContent = Object.entries(frontmatter)
+      .map(([key, value]) => {
+        if (value === null || value === undefined) {
+          return `${key}: null`
+        }
+        if (Array.isArray(value)) {
+          if (value.length === 0) return `${key}: []`
+          return `${key}:\n${value.map((v) => `  - ${v}`).join('\n')}`
+        }
+        if (typeof value === 'string') {
+          // Use proper YAML string escaping
+          if (value.includes('\n') || value.includes(':') || value.includes('"') || value.includes("'")) {
+            return `${key}: |-\n  ${value.replace(/\n/g, '\n  ')}`
+          }
+          return `${key}: ${value}`
+        }
         return `${key}: ${value}`
-      }
-    })
+      })
+      .join('\n')
 
     const mdocContent = `---
-${yamlLines.join('\n')}
+${yamlContent}
 ---
 
 ${bodyContent}`

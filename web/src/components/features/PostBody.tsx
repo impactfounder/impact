@@ -1,9 +1,6 @@
 import Markdoc from '@markdoc/markdoc'
 import React from 'react'
-
-interface MarkdocRendererProps {
-  content: { node: any } | string | null | undefined
-}
+import { getPostBody } from '@/lib/keystatic/reader'
 
 // Custom components for Markdoc rendering
 const components = {
@@ -63,6 +60,7 @@ const components = {
   ),
   HorizontalRule: () => <hr className="my-8 border-gray-200" />,
   Image: ({ src, alt }: { src: string; alt?: string }) => (
+    // eslint-disable-next-line @next/next/no-img-element
     <img src={src} alt={alt || ''} className="rounded-lg my-6 max-w-full h-auto" />
   ),
 }
@@ -126,9 +124,21 @@ const markdocConfig = {
   },
 }
 
-export function MarkdocRenderer({ content }: MarkdocRendererProps) {
+interface PostBodyProps {
+  slug: string
+}
+
+export async function PostBody({ slug }: PostBodyProps) {
+  const content = await getPostBody(slug)
+
   if (!content) {
     return <p className="text-gray-500 italic">No content...</p>
+  }
+
+  // If content is a Keystatic body object with { node: ... }
+  if (content && typeof content === 'object' && 'node' in content) {
+    const transformed = Markdoc.transform(content.node, markdocConfig)
+    return <>{Markdoc.renderers.react(transformed, React, { components })}</>
   }
 
   // If content is already a string (markdown), parse it
@@ -138,18 +148,11 @@ export function MarkdocRenderer({ content }: MarkdocRendererProps) {
     return <>{Markdoc.renderers.react(transformed, React, { components })}</>
   }
 
-  // If content is a Keystatic body object with { node: ... }
-  if (content && typeof content === 'object' && 'node' in content) {
-    const transformed = Markdoc.transform(content.node, markdocConfig)
-    return <>{Markdoc.renderers.react(transformed, React, { components })}</>
-  }
-
-  // If content is already an AST (from Keystatic)
+  // If content is already an AST
   try {
     const transformed = Markdoc.transform(content, markdocConfig)
     return <>{Markdoc.renderers.react(transformed, React, { components })}</>
   } catch {
-    // Fallback: try to render as-is if it's already transformed
-    return <>{Markdoc.renderers.react(content, React, { components })}</>
+    return <p className="text-gray-500 italic">Failed to render content.</p>
   }
 }

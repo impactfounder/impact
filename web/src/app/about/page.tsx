@@ -1,6 +1,6 @@
 import { getPost } from '@/lib/keystatic/reader'
 import Image from 'next/image'
-import { MarkdocRenderer } from '@/components/features/MarkdocRenderer'
+import { PostBody } from '@/components/features/PostBody'
 
 export const revalidate = 60
 
@@ -39,11 +39,9 @@ export default async function AboutPage() {
             )}
 
             {/* Content */}
-            {page.body && (
-                <div className="flex flex-col max-w-none">
-                    <MarkdocRenderer content={page.body} />
-                </div>
-            )}
+            <div className="flex flex-col max-w-none">
+                <PostBody slug="about" />
+            </div>
         </article>
     )
 }

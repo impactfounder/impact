@@ -7,11 +7,10 @@ export default config({
   collections: {
     posts: collection({
       label: 'Posts',
-      slugField: 'title',
-      path: 'src/content/posts/*',
+      path: 'src/content/posts/*/',
       format: { contentField: 'body' },
       schema: {
-        title: fields.slug({ name: { label: 'Title' } }),
+        title: fields.text({ label: 'Title', validation: { isRequired: true } }),
         author: fields.relationship({
           label: 'Author',
           collection: 'authors',
@@ -50,11 +49,10 @@ export default config({
     }),
     links: collection({
       label: 'Curated Links',
-      slugField: 'title',
-      path: 'src/content/links/*',
+      path: 'src/content/links/*/',
       format: { data: 'json' },
       schema: {
-        title: fields.slug({ name: { label: 'Title' } }),
+        title: fields.text({ label: 'Title', validation: { isRequired: true } }),
         url: fields.url({
           label: 'URL',
           validation: { isRequired: true },
@@ -76,11 +74,10 @@ export default config({
     }),
     categories: collection({
       label: 'Categories',
-      slugField: 'title',
-      path: 'src/content/categories/*',
+      path: 'src/content/categories/*/',
       format: { data: 'json' },
       schema: {
-        title: fields.slug({ name: { label: 'Title' } }),
+        title: fields.text({ label: 'Title', validation: { isRequired: true } }),
         description: fields.text({
           label: 'Description',
           multiline: true,
@@ -89,11 +86,10 @@ export default config({
     }),
     authors: collection({
       label: 'Authors',
-      slugField: 'name',
-      path: 'src/content/authors/*',
+      path: 'src/content/authors/*/',
       format: { data: 'json' },
       schema: {
-        name: fields.slug({ name: { label: 'Name' } }),
+        name: fields.text({ label: 'Name', validation: { isRequired: true } }),
         image: fields.image({
           label: 'Profile Image',
           directory: 'public/images/authors',

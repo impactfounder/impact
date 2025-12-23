@@ -4,7 +4,7 @@ import keystaticConfig from '../../../keystatic.config'
 export const reader = createReader(process.cwd(), keystaticConfig)
 
 // Types
-export interface Post {
+export interface PostMeta {
   slug: string
   title: string
   author: string | null
@@ -12,8 +12,10 @@ export interface Post {
   mainImageAlt: string | null
   categories: (string | null)[]
   publishedAt: string | null
-  body: any // Markdoc document
 }
+
+// For backwards compatibility
+export type Post = PostMeta
 
 export interface Category {
   slug: string
@@ -47,8 +49,8 @@ export interface Navigation {
   items: NavigationItem[]
 }
 
-// Helper to get all posts (excluding about)
-export async function getPosts(): Promise<Post[]> {
+// Helper to get all posts (excluding about) - returns metadata only, no body
+export async function getPosts(): Promise<PostMeta[]> {
   const slugs = await reader.collections.posts.list()
   const posts = await Promise.all(
     slugs
@@ -56,6 +58,7 @@ export async function getPosts(): Promise<Post[]> {
       .map(async (slug) => {
         const post = await reader.collections.posts.read(slug)
         if (!post) return null
+
         return {
           slug,
           title: post.title || '',
@@ -64,13 +67,12 @@ export async function getPosts(): Promise<Post[]> {
           mainImageAlt: post.mainImageAlt,
           categories: post.categories || [],
           publishedAt: post.publishedAt,
-          body: post.body,
         }
       })
   )
 
   return posts
-    .filter((post): post is Post => post !== null)
+    .filter((post): post is PostMeta => post !== null)
     .sort((a, b) => {
       if (!a.publishedAt || !b.publishedAt) return 0
       return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
@@ -83,8 +85,8 @@ export async function getLatestPosts(limit: number = 6): Promise<Post[]> {
   return posts.slice(0, limit)
 }
 
-// Helper to get a single post by slug
-export async function getPost(slug: string): Promise<Post | null> {
+// Helper to get a single post metadata by slug (no body)
+export async function getPost(slug: string): Promise<PostMeta | null> {
   const post = await reader.collections.posts.read(slug)
   if (!post) return null
 
@@ -96,8 +98,17 @@ export async function getPost(slug: string): Promise<Post | null> {
     mainImageAlt: post.mainImageAlt,
     categories: post.categories || [],
     publishedAt: post.publishedAt,
-    body: post.body,
   }
+}
+
+// Helper to get post body content - to be used only in Server Components
+export async function getPostBody(slug: string): Promise<{ node: any } | null> {
+  const post = await reader.collections.posts.read(slug)
+  if (!post) return null
+
+  // Resolve body content (Keystatic returns a function for document fields)
+  const bodyContent = typeof post.body === 'function' ? await post.body() : post.body
+  return bodyContent
 }
 
 // Helper to get all categories
