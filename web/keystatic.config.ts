@@ -1,16 +1,19 @@
 import { config, fields, collection, singleton } from '@keystatic/core'
 
-const isGitHub = process.env.NODE_ENV === 'production' || process.env.KEYSTATIC_GITHUB_MODE === 'true'
-const pathPrefix = isGitHub ? 'web/' : ''
+// Storage mode:
+// - Local development: local mode
+// - Production (Vercel): GitHub mode for Admin UI, but reader uses local files
+const storage =
+  process.env.NODE_ENV === 'production'
+    ? { kind: 'github' as const, repo: 'impactfounder/impact' as const }
+    : { kind: 'local' as const }
 
 export default config({
-  storage: isGitHub
-    ? { kind: 'github', repo: 'impactfounder/impact' }
-    : { kind: 'local' },
+  storage,
   collections: {
     posts: collection({
       label: 'Posts',
-      path: `${pathPrefix}src/content/posts/*/`,
+      path: 'src/content/posts/*/',
       format: { contentField: 'body' },
       schema: {
         title: fields.text({ label: 'Title', validation: { isRequired: true } }),
@@ -20,7 +23,7 @@ export default config({
         }),
         mainImage: fields.image({
           label: 'Main Image',
-          directory: `${pathPrefix}public/images/posts`,
+          directory: 'public/images/posts',
           publicPath: '/images/posts',
         }),
         mainImageAlt: fields.text({
@@ -43,7 +46,7 @@ export default config({
           label: 'Body',
           options: {
             image: {
-              directory: `${pathPrefix}public/images/posts`,
+              directory: 'public/images/posts',
               publicPath: '/images/posts',
             },
           },
@@ -52,7 +55,7 @@ export default config({
     }),
     links: collection({
       label: 'Curated Links',
-      path: `${pathPrefix}src/content/links/*/`,
+      path: 'src/content/links/*/',
       format: { data: 'json' },
       schema: {
         title: fields.text({ label: 'Title', validation: { isRequired: true } }),
@@ -66,7 +69,7 @@ export default config({
         }),
         image: fields.image({
           label: 'Cover Image',
-          directory: `${pathPrefix}public/images/links`,
+          directory: 'public/images/links',
           publicPath: '/images/links',
         }),
         publishedAt: fields.datetime({
@@ -77,7 +80,7 @@ export default config({
     }),
     categories: collection({
       label: 'Categories',
-      path: `${pathPrefix}src/content/categories/*/`,
+      path: 'src/content/categories/*/',
       format: { data: 'json' },
       schema: {
         title: fields.text({ label: 'Title', validation: { isRequired: true } }),
@@ -89,13 +92,13 @@ export default config({
     }),
     authors: collection({
       label: 'Authors',
-      path: `${pathPrefix}src/content/authors/*/`,
+      path: 'src/content/authors/*/',
       format: { data: 'json' },
       schema: {
         name: fields.text({ label: 'Name', validation: { isRequired: true } }),
         image: fields.image({
           label: 'Profile Image',
-          directory: `${pathPrefix}public/images/authors`,
+          directory: 'public/images/authors',
           publicPath: '/images/authors',
         }),
         bio: fields.text({
@@ -108,7 +111,7 @@ export default config({
   singletons: {
     navigation: singleton({
       label: 'Navigation',
-      path: `${pathPrefix}src/content/navigation`,
+      path: 'src/content/navigation',
       format: { data: 'json' },
       schema: {
         title: fields.text({
