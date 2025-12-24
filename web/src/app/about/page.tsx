@@ -2,7 +2,8 @@ import { getPost } from '@/lib/keystatic/reader'
 import Image from 'next/image'
 import { PostBody } from '@/components/features/PostBody'
 
-export const revalidate = 60
+// Static generation - rebuild on deploy only
+export const dynamic = 'force-static'
 
 export default async function AboutPage() {
     const page = await getPost('about')

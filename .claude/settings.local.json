@@ -11,7 +11,12 @@
       "Bash(npm info:*)",
       "Bash(npm run migrate:sanity:*)",
       "Bash(node -e:*)",
-      "Bash(npx tsx:*)"
+      "Bash(npx tsx:*)",
+      "Bash(git config:*)",
+      "Bash(grep:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)"
     ]
   }
 }

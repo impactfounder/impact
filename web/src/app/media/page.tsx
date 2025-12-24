@@ -1,7 +1,8 @@
 import { getLinks } from '@/lib/keystatic/reader'
 import { LinkCard } from '@/components/features/LinkCard'
 
-export const revalidate = 60
+// Static generation - rebuild on deploy only
+export const dynamic = 'force-static'
 
 export default async function MediaPage() {
     const links = await getLinks()

@@ -3,7 +3,8 @@ import Image from "next/image"
 import { notFound } from "next/navigation"
 import { PostBody } from "@/components/features/PostBody"
 
-export const revalidate = 60
+// Static generation - rebuild on deploy only
+export const dynamic = 'force-static'
 
 // Generate static params for all posts at build time
 export async function generateStaticParams() {
